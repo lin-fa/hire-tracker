@@ -122,8 +122,7 @@ textarea:focus,input:focus{outline:none;border-color:var(--brand)}
       </div>
     </div>
     <div class="q">
-      <div class="ql">今天卡住最久的事</div>
-      <div class="qs">不填也可以</div>
+      <div class="ql">今天卡住最久的事 <span style="color:var(--brand);font-size:11px">＊必填</span></div>
       <textarea id="stuck" placeholder="例：點餐系統不會用…"></textarea>
     </div>
   </div>
@@ -170,8 +169,7 @@ textarea:focus,input:focus{outline:none;border-color:var(--brand)}
       </div>
     </div>
     <div class="q">
-      <div class="ql">今天做到的一件小事 ✨</div>
-      <div class="qs">不管多小都可以寫</div>
+      <div class="ql">今天做到的一件小事 ✨ <span style="color:var(--brand);font-size:11px">＊必填</span></div>
       <textarea id="win" placeholder="例：記住了兩個常點的餐點…"></textarea>
     </div>
   </div>
@@ -237,6 +235,10 @@ async function doSubmit(){
   if(!selDay){alert('請選擇今天是第幾天');return;}
   if(!sc.mood){alert('請填寫今天心情');return;}
   if(!sc.stay){alert('請填寫留任意願');return;}
+  const stuck=document.getElementById('stuck').value.trim();
+  if(!stuck){alert('請填寫「今天卡住最久的事」');return;}
+  const win=document.getElementById('win').value.trim();
+  if(!win){alert('請填寫「今天做到的一件小事」');return;}
   const btn=document.getElementById('sbtn');
   btn.disabled=true;btn.textContent='送出中…';
   try{
