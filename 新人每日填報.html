@@ -55,8 +55,12 @@ textarea:focus,input:focus{outline:none;border-color:var(--brand)}
 <div class="day-bar" id="day-bar"></div>
 <div class="wrap" id="fw">
   <div class="name-row">
-    <div><div class="ql" style="margin-bottom:6px">姓名</div><input type="text" id="name" placeholder="你的名字"></div>
+    <div><div class="ql" style="margin-bottom:6px">姓名 <span style="color:var(--brand);font-size:11px">＊</span></div><input type="text" id="name" placeholder="你的名字"></div>
     <div><div class="ql" style="margin-bottom:6px">職位</div><input type="text" id="role" placeholder="例：外場、吧台"></div>
+  </div>
+  <div class="q" style="margin-bottom:.75rem">
+    <div class="ql" style="margin-bottom:6px">日期 <span style="color:var(--brand);font-size:11px">＊必填</span></div>
+    <input type="date" id="date" style="width:100%;padding:9px 11px;border:1.5px solid #eee;border-radius:9px;font-size:13px;background:#fafafa;color:#2a1a15;font-family:inherit">
   </div>
   <div class="slbl">❤️ 心理狀態</div>
   <div class="card">
@@ -233,6 +237,8 @@ async function doSubmit(){
   const name=document.getElementById('name').value.trim();
   if(!name){alert('請輸入姓名');return;}
   if(!selDay){alert('請選擇今天是第幾天');return;}
+  const date=document.getElementById('date').value;
+  if(!date){alert('請選擇日期');return;}
   if(!sc.mood){alert('請填寫今天心情');return;}
   if(!sc.stay){alert('請填寫留任意願');return;}
   const stuck=document.getElementById('stuck').value.trim();
@@ -243,7 +249,7 @@ async function doSubmit(){
   btn.disabled=true;btn.textContent='送出中…';
   try{
     await window._save({
-      name,role:document.getElementById('role').value.trim(),day:selDay,
+      name,role:document.getElementById('role').value.trim(),day:selDay,date,
       mood:sc.mood||0,stress:sc.stress||0,collab:sc.collab||0,stay:sc.stay||0,
       stressSrc:getSel('stressSrc'),quit:getSel('quit')[0]||'',
       pace:getSel('pace')[0]||'',dare:getSel('dare')[0]||'',
