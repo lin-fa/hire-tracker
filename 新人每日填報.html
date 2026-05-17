@@ -56,6 +56,19 @@ textarea:focus,input:focus{outline:none;border-color:var(--brand)}
     <div><div class="ql" style="margin-bottom:6px">姓名 <span style="color:var(--brand);font-size:11px">＊</span></div><input type="text" id="name" placeholder="你的名字"></div>
     <div><div class="ql" style="margin-bottom:6px">職位</div><input type="text" id="role" placeholder="例：外場、吧台"></div>
   </div>
+  <div style="margin-bottom:.75rem">
+    <div class="ql" style="margin-bottom:6px">所屬門店 <span style="color:var(--brand);font-size:11px">＊必填</span></div>
+    <select id="store" style="width:100%;padding:10px 12px;border:1.5px solid #eee;border-radius:9px;font-size:13px;background:#fafafa;color:#2a1a15;font-family:inherit;appearance:none">
+      <option value="">請選擇門店…</option>
+      <option value="巨蛋店">巨蛋店</option>
+      <option value="中正店">中正店</option>
+      <option value="四維店">四維店</option>
+      <option value="澄清店">澄清店</option>
+      <option value="文自店">文自店</option>
+      <option value="榮總店">榮總店</option>
+      <option value="三多店">三多店</option>
+    </select>
+  </div>
   <div class="q" style="margin-bottom:.75rem">
     <div class="ql" style="margin-bottom:6px">日期 <span style="color:var(--brand);font-size:11px">＊必填</span></div>
     <input type="date" id="date" style="width:100%;padding:9px 11px;border:1.5px solid #eee;border-radius:9px;font-size:13px;background:#fafafa;color:#2a1a15;font-family:inherit">
@@ -226,6 +239,8 @@ function getSigs(){return[...document.querySelectorAll('.sig.on')].map(b=>b.firs
 async function doSubmit(){
   const name=document.getElementById('name').value.trim();
   if(!name){alert('請輸入姓名');return;}
+  const store=document.getElementById('store').value;
+  if(!store){alert('請選擇所屬門店');return;}
   const date=document.getElementById('date').value;
   if(!date){alert('請選擇日期');return;}
   if(!sc.mood){alert('請填寫今天心情');return;}
@@ -238,7 +253,7 @@ async function doSubmit(){
   btn.disabled=true;btn.textContent='送出中…';
   try{
     await window._save({
-      name,role:document.getElementById('role').value.trim(),date,
+      name,role:document.getElementById('role').value.trim(),store,date,
       mood:sc.mood||0,stress:sc.stress||0,collab:sc.collab||0,stay:sc.stay||0,
       stressSrc:getSel('stressSrc'),quit:getSel('quit')[0]||'',
       pace:getSel('pace')[0]||'',dare:getSel('dare')[0]||'',
