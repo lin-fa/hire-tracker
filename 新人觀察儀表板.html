@@ -296,7 +296,7 @@ function show(name){
   const urgents=tips.filter(t=>t.u==='緊急');
   const alertHTML=urgents.length?`<div class="alert"><div class="alert-body"><strong>需要立即關注（${urgents.length}項）</strong>${urgents.map(t=>t.txt).join('<br>')}</div></div>`:'';
   const advHTML=`<div class="advice"><div class="adv-title">本週主管行動建議</div>${tips.map(t=>`<div class="adv-item"><span class="abadge" style="background:${uBg[t.u]};color:${uCo[t.u]};border:1px solid ${uBd[t.u]}">${t.u}</span><span>${t.txt}</span></div>`).join('')}</div>`;
-  const histHTML=sorted.slice(-7).map(r=>{
+  const histHTML=sorted.map(r=>{
     const qc=r.quit==='已經很認真在考慮'?`<span style="color:#dc2626;font-weight:500">考慮離職</span>`:r.quit==='今天想很多次'?`<span style="color:#dc2626">有念頭</span>`:r.quit==='偶爾閃過'?`<span style="color:#92400e">偶爾閃過</span>`:`<span style="color:var(--t3)">穩定</span>`;
     const rowDate=r.date||'';
     return `<div class="hrow"><div class="hday" style="width:70px;font-size:11px">${rowDate}</div><div class="hbars">${[['mood','心情'],['stress','壓力'],['collab','人際'],['stay','留任']].map(([k,lb])=>{const v=r[k]||0,p=v/5*100;const c=k==='stress'?(v>=4?'#dc2626':v>=3?'#f59e0b':'#16a34a'):(v>=4?'#16a34a':v>=3?'#f59e0b':'#dc2626');return`<div class="hbw"><div class="hbl">${lb}</div><div class="hbb"><div class="hbf" style="width:${p}%;background:${c}"></div></div></div>`;}).join('')}</div><div class="hq">${qc}</div></div>`;
@@ -321,7 +321,7 @@ function show(name){
     </div>
     ${advHTML}
     ${l.msg||l.win?`<div class="card"><div class="ch"><div class="ct">今日留言</div><div class="cs">${latestDate}</div></div>${l.msg?`<div class="qb">${l.msg}</div>`:''}${l.win?`<div style="font-size:12px;color:var(--t3);margin-top:10px;margin-bottom:4px">今天做到的事</div><div class="wb">${l.win}</div>`:''}</div>`:''}
-    <div class="card"><div class="ch"><div class="ct">歷史趨勢</div><div class="cs">最近 7 天</div></div>${sorted.length>0?histHTML:'<div style="color:var(--t3);font-size:13px;padding:20px 0;text-align:center">資料不足</div>'}</div>`;
+    <div class="card"><div class="ch"><div class="ct">歷史趨勢</div><div class="cs">全部 ${sorted.length} 筆</div></div>${sorted.length>0?histHTML:'<div style="color:var(--t3);font-size:13px;padding:20px 0;text-align:center">資料不足</div>'}</div>`;
 }
 function openDel(name){
   pendingDel=name;
