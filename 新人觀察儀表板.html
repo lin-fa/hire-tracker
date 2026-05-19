@@ -267,14 +267,16 @@ function renderAll(daily,cp){
   });
   allH.sort((a,b)=>({high:0,mid:1,low:2}[a.risk]-{high:0,mid:1,low:2}[b.risk]));
   document.getElementById('sb-list').innerHTML=allH.length===0?'<div style="padding:12px;font-size:12px;color:var(--t3)">尚無資料</div>':
-    allH.map(h=>`<div class="hi" id="sb-${h.name}" onclick="show('${h.name}')">
+    allH.map(h=>{
+      const latestDate=h.latest?.date||h.latest?.timestamp?.toDate?.().toLocaleDateString('zh-TW')||'';
+      return`<div class="hi" id="sb-${h.name}" onclick="show('${h.name}')">
       <div class="av" style="background:${avBg[h.risk]};color:${avCo[h.risk]}">${h.name.charAt(0)}</div>
-      <div><div class="hn">${h.name}</div><div class="hs">第${h.latestDay}天 · ${h.records.length}筆</div></div>
+      <div><div class="hn">${h.name}</div><div class="hs">${latestDate} · ${h.records.length}筆</div></div>
       <div style="display:flex;align-items:center;gap:4px;margin-left:auto">
         <div class="rdot" style="background:${dotCo[h.risk]}"></div>
         <button onclick="event.stopPropagation();openDel('${h.name}')" style="background:none;border:none;color:var(--t3);cursor:pointer;font-size:14px;padding:2px 4px" title="刪除">🗑</button>
       </div>
-    </div>`).join('');
+    </div>`;}).join('');
   document.getElementById('main').innerHTML=`
     <div class="mg">
       <div class="mc"><div class="mv">${allH.length}</div><div class="ml">新人總數</div></div>
@@ -296,14 +298,16 @@ function show(name){
   const advHTML=`<div class="advice"><div class="adv-title">本週主管行動建議</div>${tips.map(t=>`<div class="adv-item"><span class="abadge" style="background:${uBg[t.u]};color:${uCo[t.u]};border:1px solid ${uBd[t.u]}">${t.u}</span><span>${t.txt}</span></div>`).join('')}</div>`;
   const histHTML=sorted.slice(-7).map(r=>{
     const qc=r.quit==='已經很認真在考慮'?`<span style="color:#dc2626;font-weight:500">考慮離職</span>`:r.quit==='今天想很多次'?`<span style="color:#dc2626">有念頭</span>`:r.quit==='偶爾閃過'?`<span style="color:#92400e">偶爾閃過</span>`:`<span style="color:var(--t3)">穩定</span>`;
-    return `<div class="hrow"><div class="hday">第${r.day}天</div><div class="hbars">${[['mood','心情'],['stress','壓力'],['collab','人際'],['stay','留任']].map(([k,lb])=>{const v=r[k]||0,p=v/5*100;const c=k==='stress'?(v>=4?'#dc2626':v>=3?'#f59e0b':'#16a34a'):(v>=4?'#16a34a':v>=3?'#f59e0b':'#dc2626');return`<div class="hbw"><div class="hbl">${lb}</div><div class="hbb"><div class="hbf" style="width:${p}%;background:${c}"></div></div></div>`;}).join('')}</div><div class="hq">${qc}</div></div>`;
+    const rowDate=r.date||'';
+    return `<div class="hrow"><div class="hday" style="width:70px;font-size:11px">${rowDate}</div><div class="hbars">${[['mood','心情'],['stress','壓力'],['collab','人際'],['stay','留任']].map(([k,lb])=>{const v=r[k]||0,p=v/5*100;const c=k==='stress'?(v>=4?'#dc2626':v>=3?'#f59e0b':'#16a34a'):(v>=4?'#16a34a':v>=3?'#f59e0b':'#dc2626');return`<div class="hbw"><div class="hbl">${lb}</div><div class="hbb"><div class="hbf" style="width:${p}%;background:${c}"></div></div></div>`;}).join('')}</div><div class="hq">${qc}</div></div>`;
   }).join('');
+  const latestDate=l.date||l.timestamp?.toDate?.().toLocaleDateString('zh-TW')||'';
   document.getElementById('main').innerHTML=`
     ${alertHTML}
     <div class="card">
       <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
         <div class="av" style="width:46px;height:46px;font-size:17px;background:${avBg[h.risk]};color:${avCo[h.risk]}">${h.name.charAt(0)}</div>
-        <div style="flex:1"><div style="font-size:18px;font-weight:600">${h.name} <span style="font-size:13px;color:var(--t3);font-weight:400">${l.role||''}</span></div><div style="font-size:12px;color:var(--t3);margin-top:3px">第 ${h.latestDay} 天 · 共 ${h.records.length} 筆</div></div>
+        <div style="flex:1"><div style="font-size:18px;font-weight:600">${h.name} <span style="font-size:13px;color:var(--t3);font-weight:400">${l.role||''}</span></div><div style="font-size:12px;color:var(--t3);margin-top:3px">最新填報：${latestDate} · 共 ${h.records.length} 筆</div></div>
         <div style="padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;background:${avBg[h.risk]};color:${avCo[h.risk]};border:1px solid ${avCo[h.risk]}44">${rL[h.risk]}</div>
       </div>
       <div class="sg">
@@ -316,7 +320,7 @@ function show(name){
       ${(l.stressSrc||[]).length>0?`<div class="div"></div><div style="font-size:12px;color:var(--t3);margin-bottom:6px">壓力來源</div><div class="tl">${(l.stressSrc||[]).map(t=>`<span class="tg ty">${t}</span>`).join('')}</div>`:''}
     </div>
     ${advHTML}
-    ${l.msg||l.win?`<div class="card"><div class="ch"><div class="ct">今日留言</div><div class="cs">第 ${l.day} 天</div></div>${l.msg?`<div class="qb">${l.msg}</div>`:''}${l.win?`<div style="font-size:12px;color:var(--t3);margin-top:10px;margin-bottom:4px">今天做到的事</div><div class="wb">${l.win}</div>`:''}</div>`:''}
+    ${l.msg||l.win?`<div class="card"><div class="ch"><div class="ct">今日留言</div><div class="cs">${latestDate}</div></div>${l.msg?`<div class="qb">${l.msg}</div>`:''}${l.win?`<div style="font-size:12px;color:var(--t3);margin-top:10px;margin-bottom:4px">今天做到的事</div><div class="wb">${l.win}</div>`:''}</div>`:''}
     <div class="card"><div class="ch"><div class="ct">歷史趨勢</div><div class="cs">最近 7 天</div></div>${sorted.length>0?histHTML:'<div style="color:var(--t3);font-size:13px;padding:20px 0;text-align:center">資料不足</div>'}</div>`;
 }
 function openDel(name){
