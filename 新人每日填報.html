@@ -233,9 +233,10 @@ window._loadMsg=async function(name,store){
     const snap=await getDocs(q);
     if(!snap.empty){
       const d=snap.docs[0].data();
-      document.getElementById("manager-msg-area").innerHTML="<div class=\"manager-msg\"><div class=\"mtitle\">📣 主管留言給你</div><div class=\"mcontent\">"+d.message+"</div><div class=\"mdate\">"+（d.date||""）+"</div></div>";
+      document.getElementById("manager-msg-area").innerHTML=
+        "<div class=\"manager-msg\"><div class=\"mtitle\">📣 主管留言給你</div><div class=\"mcontent\">"+d.message+"</div><div class=\"mdate\">"+(d.date||"")+"</div></div>";
     }
-  }catch(e){}
+  }catch(e){console.log("留言讀取錯誤",e);}
 };
 </script>
 
@@ -283,13 +284,23 @@ document.getElementById("date").value=new Date().toISOString().slice(0,10);
 
 var msgLoaded=false;
 function tryLoadMsg(){
-  if(msgLoaded)return;
   var name=document.getElementById("name").value.trim();
   var store=document.getElementById("store").value;
-  if(name&&store){msgLoaded=true;if(window._loadMsg)window._loadMsg(name,store);}
+  if(name&&store&&!msgLoaded){
+    msgLoaded=true;
+    if(window._loadMsg)window._loadMsg(name,store);
+  }
 }
+// 門店改變時重置，讓新的組合可以重新抓取
+document.getElementById("store").addEventListener("change",function(){
+  msgLoaded=false;
+  document.getElementById("manager-msg-area").innerHTML="";
+  tryLoadMsg();
+});
 document.getElementById("name").addEventListener("blur",tryLoadMsg);
-document.getElementById("store").addEventListener("change",tryLoadMsg);
+document.getElementById("name").addEventListener("input",function(){
+  if(msgLoaded){msgLoaded=false;document.getElementById("manager-msg-area").innerHTML="";}
+});
 
 var sc={};
 function setS(id,v){sc[id]=v;document.querySelectorAll("#"+id+" .sb").forEach(function(b,i){b.classList.toggle("on",i<v);});}
