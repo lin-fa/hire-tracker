@@ -73,6 +73,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .cpkey{color:var(--t3);flex-shrink:0;min-width:70px}
 .div{height:1px;background:var(--bd);margin:14px 0}
 .empty{text-align:center;padding:60px 20px;color:var(--t3);font-size:13px;line-height:2}
+/* 主管留言區 */
+.reply-box{background:linear-gradient(135deg,var(--dark),var(--brand));border-radius:12px;padding:16px 20px;margin-bottom:14px;color:#fff}
+.reply-box .rt{font-size:12px;font-weight:600;opacity:.8;margin-bottom:10px}
+.reply-box textarea{width:100%;padding:10px 12px;border-radius:8px;border:none;background:rgba(255,255,255,.15);color:#fff;font-family:inherit;font-size:13px;resize:none;min-height:72px;outline:none}
+.reply-box textarea::placeholder{color:rgba(255,255,255,.5)}
+.reply-box .send-btn{margin-top:8px;padding:7px 18px;border-radius:8px;border:1px solid rgba(255,255,255,.4);background:rgba(255,255,255,.2);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+.reply-box .send-btn:hover{background:rgba(255,255,255,.3)}
+.reply-box .prev-reply{margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.2);font-size:12px;opacity:.8;line-height:1.6}
+.reply-box .prev-date{font-size:10px;opacity:.6;margin-top:3px}
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center}
 .modal-bg.open{display:flex}
 .modal{background:#fff;border-radius:14px;padding:24px;max-width:320px;width:90%;text-align:center}
@@ -151,7 +160,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div><!-- end dashboard-page -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-app.js";
-import { getFirestore, collection, getDocs, query, orderBy, writeBatch, doc } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-firestore.js";
+import { getFirestore, collection, getDocs, query, orderBy, where, limit, writeBatch, doc, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-firestore.js";
 const app=initializeApp({
   apiKey:"AIzaSyCl8kl4YW_ohHlhFTKNyQyQ-mZn1G7h9HM",
   authDomain:"hire-tracker-9e3fc.firebaseapp.com",
@@ -178,6 +187,21 @@ window.deleteName=async function(name){
     all.slice(i,i+400).forEach(r=>batch.delete(doc(db,r.formType==='checkpoint'?'checkpoint_surveys':'daily_checkins',r.id)));
     await batch.commit();
   }
+};
+window.sendReply=async function(name,store,message){
+  await addDoc(collection(db,'manager_replies'),{
+    name,store,message,
+    date:new Date().toLocaleDateString('zh-TW'),
+    timestamp:serverTimestamp()
+  });
+};
+window.loadPrevReply=async function(name,store){
+  try{
+    const q=query(collection(db,'manager_replies'),where('name','==',name),where('store','==',store),orderBy('timestamp','desc'),limit(1));
+    const snap=await getDocs(q);
+    if(!snap.empty)return snap.docs[0].data();
+  }catch(e){}
+  return null;
 };
 window.loadAll();
 </script>
@@ -287,12 +311,12 @@ function renderAll(daily,cp){
     <div class="empty">← 點選左側新人查看詳細分析與行動建議</div>`;
   if(allH.length>0)show(allH[0].name);
 }
-function show(name){
+async function show(name){
   document.querySelectorAll('.hi').forEach(e=>e.classList.remove('act'));
   const sb=document.getElementById('sb-'+name);if(sb)sb.classList.add('act');
   const h=allH.find(x=>x.name===name);if(!h)return;
   const l=h.latest||{},tips=genTips(h,[]),sigs=l.signals||[];
-  const sorted=[...h.records].sort((a,b)=>(a.day||0)-(b.day||0));
+  const sorted=[...h.records].sort((a,b)=>(a.date||'').localeCompare(b.date||''));
   const urgents=tips.filter(t=>t.u==='緊急');
   const alertHTML=urgents.length?`<div class="alert"><div class="alert-body"><strong>需要立即關注（${urgents.length}項）</strong>${urgents.map(t=>t.txt).join('<br>')}</div></div>`:'';
   const advHTML=`<div class="advice"><div class="adv-title">本週主管行動建議</div>${tips.map(t=>`<div class="adv-item"><span class="abadge" style="background:${uBg[t.u]};color:${uCo[t.u]};border:1px solid ${uBd[t.u]}">${t.u}</span><span>${t.txt}</span></div>`).join('')}</div>`;
@@ -302,6 +326,11 @@ function show(name){
     return `<div class="hrow"><div class="hday" style="width:70px;font-size:11px">${rowDate}</div><div class="hbars">${[['mood','心情'],['stress','壓力'],['collab','人際'],['stay','留任']].map(([k,lb])=>{const v=r[k]||0,p=v/5*100;const c=k==='stress'?(v>=4?'#dc2626':v>=3?'#f59e0b':'#16a34a'):(v>=4?'#16a34a':v>=3?'#f59e0b':'#dc2626');return`<div class="hbw"><div class="hbl">${lb}</div><div class="hbb"><div class="hbf" style="width:${p}%;background:${c}"></div></div></div>`;}).join('')}</div><div class="hq">${qc}</div></div>`;
   }).join('');
   const latestDate=l.date||l.timestamp?.toDate?.().toLocaleDateString('zh-TW')||'';
+
+  // 讀取上一則主管留言
+  const prevReply=await window.loadPrevReply(name,currentStore);
+  const prevReplyHTML=prevReply?`<div class="prev-reply">上次留言：${prevReply.message}<div class="prev-date">${prevReply.date}</div></div>`:'';
+
   document.getElementById('main').innerHTML=`
     ${alertHTML}
     <div class="card">
@@ -320,8 +349,32 @@ function show(name){
       ${(l.stressSrc||[]).length>0?`<div class="div"></div><div style="font-size:12px;color:var(--t3);margin-bottom:6px">壓力來源</div><div class="tl">${(l.stressSrc||[]).map(t=>`<span class="tg ty">${t}</span>`).join('')}</div>`:''}
     </div>
     ${advHTML}
+
+    <!-- 主管留言區 -->
+    <div class="reply-box">
+      <div class="rt">📣 留言給 ${h.name}（新人下次填報會看到）</div>
+      <textarea id="reply-input" placeholder="例：今天看到你撐過去了，繼續加油！有什麼困難隨時跟我說…"></textarea>
+      <button class="send-btn" onclick="doSendReply('${h.name}')">送出留言</button>
+      ${prevReplyHTML}
+    </div>
+
     ${l.msg||l.win?`<div class="card"><div class="ch"><div class="ct">今日留言</div><div class="cs">${latestDate}</div></div>${l.msg?`<div class="qb">${l.msg}</div>`:''}${l.win?`<div style="font-size:12px;color:var(--t3);margin-top:10px;margin-bottom:4px">今天做到的事</div><div class="wb">${l.win}</div>`:''}</div>`:''}
     <div class="card"><div class="ch"><div class="ct">歷史趨勢</div><div class="cs">全部 ${sorted.length} 筆</div></div>${sorted.length>0?histHTML:'<div style="color:var(--t3);font-size:13px;padding:20px 0;text-align:center">資料不足</div>'}</div>`;
+}
+async function doSendReply(name){
+  const msg=document.getElementById('reply-input')?.value.trim();
+  if(!msg){alert('請輸入留言內容');return;}
+  const btn=event.target;
+  btn.disabled=true;btn.textContent='送出中…';
+  try{
+    await window.sendReply(name,currentStore,msg);
+    btn.textContent='✓ 已送出';
+    btn.style.background='rgba(255,255,255,.35)';
+    document.getElementById('reply-input').value='';
+  }catch(e){
+    alert('送出失敗，請再試一次');
+    btn.disabled=false;btn.textContent='送出留言';
+  }
 }
 function openDel(name){
   pendingDel=name;
