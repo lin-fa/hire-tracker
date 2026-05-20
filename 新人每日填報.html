@@ -152,30 +152,22 @@ textarea:focus,input:focus,select:focus{outline:none;border-color:var(--brand)}
     </div>
   </div>
 
-  <div class="slbl">💪 今日狀態</div>
+    <div class="slbl">💪 今日狀態</div>
   <div class="card">
     <div class="q">
-      <div class="ql">如果可以，你還想繼續做這份工作嗎？ <span class="req">＊</span></div>
-      <div class="s5" id="stay">
-        <div class="sb" onclick="setS('stay',1)">🚪<span class="n">很想走</span></div>
-        <div class="sb" onclick="setS('stay',2)">😶<span class="n">考慮中</span></div>
-        <div class="sb" onclick="setS('stay',3)">🤔<span class="n">說不定</span></div>
-        <div class="sb" onclick="setS('stay',4)">😊<span class="n">想留</span></div>
-        <div class="sb" onclick="setS('stay',5)">💪<span class="n">很想留</span></div>
-      </div>
-    </div>
-    <div class="q">
-      <div class="ql">你覺得自己的速度有沒有在進步？</div>
+      <div class="ql">你覺得自己哪個部分今天有進步？</div>
       <div class="tags" id="progress">
-        <div class="tag" onclick="single('progress',this)">明顯進步</div>
-        <div class="tag" onclick="single('progress',this)">有一點進步</div>
-        <div class="tag" onclick="single('progress',this)">感覺差不多</div>
-        <div class="tag warn" onclick="single('progress',this)">好像退步了</div>
+        <div class="tag" onclick="single('progress',this)">速度變快了</div>
+        <div class="tag" onclick="single('progress',this)">記住更多流程</div>
+        <div class="tag" onclick="single('progress',this)">跟同事更熟了</div>
+        <div class="tag" onclick="single('progress',this)">應對狀況更好</div>
+        <div class="tag" onclick="single('progress',this)">感覺跟昨天差不多</div>
+        <div class="tag warn" onclick="single('progress',this)">好像比昨天更難了</div>
       </div>
     </div>
     <div class="q">
       <div class="ql">今天做到的一件小事 ✨ <span class="req">＊</span></div>
-      <textarea id="win" placeholder="不管多小都可以寫…"></textarea>
+      <textarea id="win" placeholder="不管多小都可以寫，讓自己看見進步…"></textarea>
     </div>
   </div>
 
@@ -242,27 +234,26 @@ window._loadMsg=async function(name,store){
 
 <script>
 const qBank=[
-  {id:"q_handle",
-   render:function(){return "<div class=\"q\"><div class=\"ql\">今天有沒有遇到不知道怎麼處理的狀況？<span class=\"rbadge\">今日特別題</span></div><div class=\"tags\" id=\"rq_handle\"><div class=\"tag\" onclick=\"single('rq_handle',this)\">沒有，都處理得來</div><div class=\"tag\" onclick=\"single('rq_handle',this)\">有，但自己想辦法解決了</div><div class=\"tag warn\" onclick=\"single('rq_handle',this)\">有，不知道該怎麼辦</div><div class=\"tag\" onclick=\"single('rq_handle',this)\">有，已請同事或主管幫忙</div></div></div>";},
-   get:function(){return getSel("rq_handle")[0]||"";}},
-  {id:"q_taught",
-   render:function(){return "<div class=\"q\"><div class=\"ql\">今天有沒有人教你做事，還是都自己摸索？<span class=\"rbadge\">今日特別題</span></div><div class=\"tags\" id=\"rq_taught\"><div class=\"tag\" onclick=\"single('rq_taught',this)\">有人帶我，很有幫助</div><div class=\"tag\" onclick=\"single('rq_taught',this)\">有一點指導</div><div class=\"tag warn\" onclick=\"single('rq_taught',this)\">幾乎都自己摸索</div><div class=\"tag warn\" onclick=\"single('rq_taught',this)\">完全沒人帶</div></div></div>";},
-   get:function(){return getSel("rq_taught")[0]||"";}},
-  {id:"q_recommend",
-   render:function(){return "<div class=\"q\"><div class=\"ql\">如果朋友問你這份工作好不好，你會怎麼說？<span class=\"rbadge\">今日特別題</span></div><div class=\"tags\" id=\"rq_recommend\"><div class=\"tag\" onclick=\"single('rq_recommend',this)\">會大力推薦</div><div class=\"tag\" onclick=\"single('rq_recommend',this)\">還不錯，可以試試</div><div class=\"tag\" onclick=\"single('rq_recommend',this)\">說不定，看個人</div><div class=\"tag warn\" onclick=\"single('rq_recommend',this)\">不太會推薦</div><div class=\"tag warn\" onclick=\"single('rq_recommend',this)\">絕對不會推薦</div></div></div>";},
-   get:function(){return getSel("rq_recommend")[0]||"";}},
-  {id:"q_support",
-   render:function(){return "<div class=\"q\"><div class=\"ql\">今天有沒有人主動幫助或關心你？<span class=\"rbadge\">今日特別題</span></div><div class=\"tags\" id=\"rq_support\"><div class=\"tag\" onclick=\"single('rq_support',this)\">有，感覺很溫暖</div><div class=\"tag\" onclick=\"single('rq_support',this)\">有一點</div><div class=\"tag\" onclick=\"single('rq_support',this)\">幾乎沒有</div><div class=\"tag warn\" onclick=\"single('rq_support',this)\">感覺被忽視</div></div></div>";},
-   get:function(){return getSel("rq_support")[0]||"";}},
-  {id:"q_pace",
-   render:function(){return "<div class=\"q\"><div class=\"ql\">今天跟不跟得上工作節奏？<span class=\"rbadge\">今日特別題</span></div><div class=\"tags\" id=\"rq_pace\"><div class=\"tag\" onclick=\"single('rq_pace',this)\">完全跟得上</div><div class=\"tag\" onclick=\"single('rq_pace',this)\">大部分跟得上</div><div class=\"tag\" onclick=\"single('rq_pace',this)\">有點跟不上</div><div class=\"tag warn\" onclick=\"single('rq_pace',this)\">完全跟不上</div></div></div>";},
-   get:function(){return getSel("rq_pace")[0]||"";}},
-  {id:"q_stuck",
-   render:function(){return "<div class=\"q\"><div class=\"ql\">今天卡住最久的事<span class=\"rbadge\">今日特別題</span></div><textarea id=\"rq_stuck\" placeholder=\"例：不知道備料放哪…\"></textarea></div>";},
-   get:function(){var el=document.getElementById("rq_stuck");return el?el.value.trim():"";}},
-  {id:"q_dare",
-   render:function(){return "<div class=\"q\"><div class=\"ql\">有不懂但不敢問的事嗎？<span class=\"rbadge\">今日特別題</span></div><div class=\"tags\" id=\"rq_dare\"><div class=\"tag\" onclick=\"single('rq_dare',this)\">沒有，都敢問</div><div class=\"tag\" onclick=\"single('rq_dare',this)\">有一兩件</div><div class=\"tag warn\" onclick=\"single('rq_dare',this)\">很多，但不敢開口</div></div></div>";},
-   get:function(){return getSel("rq_dare")[0]||"";}},
+  {id:"q_learned",render:function(){return "<div class=\"q\"><div class=\"ql\">今天學到一件之前不會的事，是什麼？<span class=\"rbadge\">今日特別題</span></div><textarea id=\"rq_learned\" placeholder=\"不管多小都可以寫，例如：學會怎麼備餐、記住了一個流程…\"></textarea></div>";},get:function(){var el=document.getElementById("rq_learned");return el?el.value.trim():"";}},
+  {id:"q_redo",render:function(){return "<div class=\"q\"><div class=\"ql\">如果今天重來一次，你會想改變什麼？<span class=\"rbadge\">今日特別題</span></div><div class=\"tags\" id=\"rq_redo\"><div class=\"tag\" onclick=\"single('rq_redo',this)\">沒有，今天做得還不錯</div><div class=\"tag\" onclick=\"single('rq_redo',this)\">會更早開口問問題</div><div class=\"tag\" onclick=\"single('rq_redo',this)\">會更注意某個細節</div><div class=\"tag\" onclick=\"single('rq_redo',this)\">會更主動幫忙同事</div><div class=\"tag warn\" onclick=\"single('rq_redo',this)\">整體都想重來</div></div></div>";},get:function(){return getSel("rq_redo")[0]||"";}},
+  {id:"q_best_growth",render:function(){return "<div class=\"q\"><div class=\"ql\">你覺得自己哪個部分進步最多？<span class=\"rbadge\">今日特別題</span></div><div class=\"tags\" id=\"rq_best_growth\"><div class=\"tag\" onclick=\"single('rq_best_growth',this)\">動作速度</div><div class=\"tag\" onclick=\"single('rq_best_growth',this)\">記住流程</div><div class=\"tag\" onclick=\"single('rq_best_growth',this)\">跟同事溝通</div><div class=\"tag\" onclick=\"single('rq_best_growth',this)\">面對突發狀況</div><div class=\"tag\" onclick=\"single('rq_best_growth',this)\">感覺還沒什麼進步</div></div></div>";},get:function(){return getSel("rq_best_growth")[0]||"";}},
+  {id:"q_asked",render:function(){return "<div class=\"q\"><div class=\"ql\">今天有沒有主動問過任何問題？<span class=\"rbadge\">今日特別題</span></div><div class=\"tags\" id=\"rq_asked\"><div class=\"tag\" onclick=\"single('rq_asked',this)\">有，而且得到很好的解答</div><div class=\"tag\" onclick=\"single('rq_asked',this)\">有問，但還是有點不確定</div><div class=\"tag\" onclick=\"single('rq_asked',this)\">沒有，但其實有想問</div><div class=\"tag warn\" onclick=\"single('rq_asked',this)\">沒有，不知道可以問誰</div></div></div>";},get:function(){return getSel("rq_asked")[0]||"";}},
+  {id:"q_taught",render:function(){return "<div class=\"q\"><div class=\"ql\">今天有沒有人教你做事，還是都自己摸索？<span class=\"rbadge\">今日特別題</span></div><div class=\"tags\" id=\"rq_taught\"><div class=\"tag\" onclick=\"single('rq_taught',this)\">有人帶我，很有幫助</div><div class=\"tag\" onclick=\"single('rq_taught',this)\">有一點指導</div><div class=\"tag warn\" onclick=\"single('rq_taught',this)\">幾乎都自己摸索</div><div class=\"tag warn\" onclick=\"single('rq_taught',this)\">完全沒人帶</div></div></div>";},get:function(){return getSel("rq_taught")[0]||"";}},
+  {id:"q_belong",render:function(){return "<div class=\"q\"><div class=\"ql\">你覺得自己有沒有融入這個團隊？<span class=\"rbadge\">今日特別題</span></div><div class=\"tags\" id=\"rq_belong\"><div class=\"tag\" onclick=\"single('rq_belong',this)\">很有融入感，像自己人了</div><div class=\"tag\" onclick=\"single('rq_belong',this)\">慢慢在融入</div><div class=\"tag\" onclick=\"single('rq_belong',this)\">還在觀察</div><div class=\"tag warn\" onclick=\"single('rq_belong',this)\">感覺格格不入</div></div></div>";},get:function(){return getSel("rq_belong")[0]||"";}},
+  {id:"q_helper",render:function(){return "<div class=\"q\"><div class=\"ql\">有沒有人讓你覺得「這個人真的幫到我」？<span class=\"rbadge\">今日特別題</span></div><div class=\"tags\" id=\"rq_helper\"><div class=\"tag\" onclick=\"single('rq_helper',this)\">有，很感謝他</div><div class=\"tag\" onclick=\"single('rq_helper',this)\">有，但只是一點點</div><div class=\"tag\" onclick=\"single('rq_helper',this)\">大家都很忙，沒有</div><div class=\"tag warn\" onclick=\"single('rq_helper',this)\">感覺沒人在意我</div></div></div>";},get:function(){return getSel("rq_helper")[0]||"";}},
+  {id:"q_if_manager",render:function(){return "<div class=\"q\"><div class=\"ql\">如果你是主管，你今天會想改善什麼？<span class=\"rbadge\">今日特別題</span></div><textarea id=\"rq_if_manager\" placeholder=\"例如：訓練方式、溝通方式、工作分配…（可以不填）\"></textarea></div>";},get:function(){var el=document.getElementById("rq_if_manager");return el?el.value.trim():"";}},
+  {id:"q_handle",render:function(){return "<div class=\"q\"><div class=\"ql\">今天遇到最難處理的事是什麼？<span class=\"rbadge\">今日特別題</span></div><div class=\"tags\" id=\"rq_handle\"><div class=\"tag\" onclick=\"single('rq_handle',this)\">沒有，今天都還好</div><div class=\"tag\" onclick=\"single('rq_handle',this)\">有，但自己想辦法解決了</div><div class=\"tag\" onclick=\"single('rq_handle',this)\">有，已請同事或主管幫忙</div><div class=\"tag warn\" onclick=\"single('rq_handle',this)\">有，不知道該怎麼辦</div></div></div>";},get:function(){return getSel("rq_handle")[0]||"";}},
+  {id:"q_dare",render:function(){return "<div class=\"q\"><div class=\"ql\">有不懂但不敢問的事嗎？<span class=\"rbadge\">今日特別題</span></div><div class=\"tags\" id=\"rq_dare\"><div class=\"tag\" onclick=\"single('rq_dare',this)\">沒有，都敢問</div><div class=\"tag\" onclick=\"single('rq_dare',this)\">有一兩件</div><div class=\"tag warn\" onclick=\"single('rq_dare',this)\">很多，但不敢開口</div></div></div>";},get:function(){return getSel("rq_dare")[0]||"";}},
+  {id:"q_pace",render:function(){return "<div class=\"q\"><div class=\"ql\">今天跟不跟得上工作節奏？<span class=\"rbadge\">今日特別題</span></div><div class=\"tags\" id=\"rq_pace\"><div class=\"tag\" onclick=\"single('rq_pace',this)\">完全跟得上</div><div class=\"tag\" onclick=\"single('rq_pace',this)\">大部分跟得上</div><div class=\"tag\" onclick=\"single('rq_pace',this)\">有點跟不上</div><div class=\"tag warn\" onclick=\"single('rq_pace',this)\">完全跟不上</div></div></div>";},get:function(){return getSel("rq_pace")[0]||"";}},
+  {id:"q_body",render:function(){return "<div class=\"q\"><div class=\"ql\">身體狀態怎麼樣？<span class=\"rbadge\">今日特別題</span></div><div class=\"tags\" id=\"rq_body\"><div class=\"tag\" onclick=\"single('rq_body',this)\">很好，體力充足</div><div class=\"tag\" onclick=\"single('rq_body',this)\">還可以，有點累</div><div class=\"tag\" onclick=\"single('rq_body',this)\">很累，但撐得住</div><div class=\"tag warn\" onclick=\"single('rq_body',this)\">身體很不舒服</div></div></div>";},get:function(){return getSel("rq_body")[0]||"";}},
+  {id:"q_moment",render:function(){return "<div class=\"q\"><div class=\"ql\">今天有沒有讓你覺得「還好有來上班」的瞬間？<span class=\"rbadge\">今日特別題</span></div><div class=\"tags\" id=\"rq_moment\"><div class=\"tag\" onclick=\"single('rq_moment',this)\">有！讓我很開心</div><div class=\"tag\" onclick=\"single('rq_moment',this)\">有一點點</div><div class=\"tag\" onclick=\"single('rq_moment',this)\">今天沒有特別感覺</div><div class=\"tag warn\" onclick=\"single('rq_moment',this)\">完全沒有，很想走</div></div></div>";},get:function(){return getSel("rq_moment")[0]||"";}},
+  {id:"q_recommend",render:function(){return "<div class=\"q\"><div class=\"ql\">如果朋友問你這份工作好不好，你會怎麼說？<span class=\"rbadge\">今日特別題</span></div><div class=\"tags\" id=\"rq_recommend\"><div class=\"tag\" onclick=\"single('rq_recommend',this)\">會大力推薦</div><div class=\"tag\" onclick=\"single('rq_recommend',this)\">還不錯，可以試試</div><div class=\"tag\" onclick=\"single('rq_recommend',this)\">說不定，看個人</div><div class=\"tag warn\" onclick=\"single('rq_recommend',this)\">不太會推薦</div><div class=\"tag warn\" onclick=\"single('rq_recommend',this)\">絕對不會推薦</div></div></div>";},get:function(){return getSel("rq_recommend")[0]||"";}},
+  {id:"q_reason_stay",render:function(){return "<div class=\"q\"><div class=\"ql\">讓你想繼續做下去的原因是什麼？<span class=\"rbadge\">今日特別題</span></div><div class=\"tags\" id=\"rq_reason_stay\"><div class=\"tag\" onclick=\"single('rq_reason_stay',this)\">喜歡這份工作</div><div class=\"tag\" onclick=\"single('rq_reason_stay',this)\">同事讓我想留</div><div class=\"tag\" onclick=\"single('rq_reason_stay',this)\">薪水和穩定</div><div class=\"tag\" onclick=\"single('rq_reason_stay',this)\">還在適應，說不定</div><div class=\"tag warn\" onclick=\"single('rq_reason_stay',this)\">目前還沒找到理由</div></div></div>";},get:function(){return getSel("rq_reason_stay")[0]||"";}},
+  {id:"q_achievement",render:function(){return "<div class=\"q\"><div class=\"ql\">今天有沒有什麼事讓你有成就感？<span class=\"rbadge\">今日特別題</span></div><div class=\"tags\" id=\"rq_achievement\"><div class=\"tag\" onclick=\"single('rq_achievement',this)\">有，很有滿足感</div><div class=\"tag\" onclick=\"single('rq_achievement',this)\">有一點小成就</div><div class=\"tag\" onclick=\"single('rq_achievement',this)\">今天平平淡淡</div><div class=\"tag warn\" onclick=\"single('rq_achievement',this)\">沒有，反而覺得挫折</div></div></div>";},get:function(){return getSel("rq_achievement")[0]||"";}},
+  {id:"q_expectation",render:function(){return "<div class=\"q\"><div class=\"ql\">你覺得主管對你的期待是什麼？你有達到嗎？<span class=\"rbadge\">今日特別題</span></div><div class=\"tags\" id=\"rq_expectation\"><div class=\"tag\" onclick=\"single('rq_expectation',this)\">有達到，而且超出期待</div><div class=\"tag\" onclick=\"single('rq_expectation',this)\">大概有達到</div><div class=\"tag\" onclick=\"single('rq_expectation',this)\">不太確定主管期待什麼</div><div class=\"tag warn\" onclick=\"single('rq_expectation',this)\">感覺沒有達到</div></div></div>";},get:function(){return getSel("rq_expectation")[0]||"";}},
+  {id:"q_gap",render:function(){return "<div class=\"q\"><div class=\"ql\">這份工作跟你當初想像的，差在哪裡？<span class=\"rbadge\">今日特別題</span></div><div class=\"tags\" id=\"rq_gap\"><div class=\"tag\" onclick=\"single('rq_gap',this)\">比想像好</div><div class=\"tag\" onclick=\"single('rq_gap',this)\">差不多</div><div class=\"tag\" onclick=\"single('rq_gap',this)\">比想像辛苦一點</div><div class=\"tag warn\" onclick=\"single('rq_gap',this)\">差很多，有點後悔</div></div></div>";},get:function(){return getSel("rq_gap")[0]||"";}},
+  {id:"q_improve_self",render:function(){return "<div class=\"q\"><div class=\"ql\">你覺得自己目前最需要加強的是什麼？<span class=\"rbadge\">今日特別題</span></div><div class=\"tags\" id=\"rq_improve_self\"><div class=\"tag\" onclick=\"single('rq_improve_self',this)\">動作速度</div><div class=\"tag\" onclick=\"single('rq_improve_self',this)\">記住流程和細節</div><div class=\"tag\" onclick=\"single('rq_improve_self',this)\">跟同事溝通</div><div class=\"tag\" onclick=\"single('rq_improve_self',this)\">面對客人或突發狀況</div><div class=\"tag\" onclick=\"single('rq_improve_self',this)\">體力和耐力</div></div></div>";},get:function(){return getSel("rq_improve_self")[0]||"";}},
+  {id:"q_msg_to_boss",render:function(){return "<div class=\"q\"><div class=\"ql\">如果可以跟主管說一件事，你最想說什麼？<span class=\"rbadge\">今日特別題</span></div><textarea id=\"rq_msg_to_boss\" placeholder=\"什麼都可以，主管真的會看…\"></textarea></div>";},get:function(){var el=document.getElementById("rq_msg_to_boss");return el?el.value.trim():"";}}
 ];
 
 function getTodayQs(){
@@ -281,6 +272,14 @@ function getTodayQs(){
 var todayQs=getTodayQs();
 document.getElementById("random-questions").innerHTML=todayQs.map(function(q){return q.render();}).join("");
 document.getElementById("date").value=new Date().toISOString().slice(0,10);
+  // 每週一才出現留任意願題
+  var today=new Date();
+  var dayOfWeek=today.getDay(); // 0=週日, 1=週一
+  if(dayOfWeek===1){
+    var weeklyDiv=document.createElement("div");
+    weeklyDiv.innerHTML="<div class=\"slbl\">📅 每週評估</div><div class=\"card\"><div class=\"q\"><div class=\"ql\">這週整體來說，你還想繼續做這份工作嗎？ <span class=\"req\">＊</span></div><div class=\"s5\" id=\"stay\"><div class=\"sb\" onclick=\"setS('stay',1)\">🚪<span class=\"n\">很想走</span></div><div class=\"sb\" onclick=\"setS('stay',2)\">😶<span class=\"n\">考慮中</span></div><div class=\"sb\" onclick=\"setS('stay',3)\">🤔<span class=\"n\">說不定</span></div><div class=\"sb\" onclick=\"setS('stay',4)\">😊<span class=\"n\">想留</span></div><div class=\"sb\" onclick=\"setS('stay',5)\">💪<span class=\"n\">很想留</span></div></div></div></div>";
+    document.getElementById("fw").insertBefore(weeklyDiv, document.getElementById("sbtn"));
+  }
 
 var msgLoaded=false;
 function tryLoadMsg(){
@@ -317,7 +316,7 @@ async function doSubmit(){
   var date=document.getElementById("date").value;
   if(!date){alert("請選擇日期");return;}
   if(!sc.mood){alert("請填寫今天心情");return;}
-  if(!sc.stay){alert("請填寫留任意願");return;}
+  var dayOfWeek2=new Date().getDay();if(dayOfWeek2===1&&!sc.stay){alert("請填寫本週留任意願");return;}
   var win=document.getElementById("win").value.trim();
   if(!win){alert("請填寫今天做到的一件小事");return;}
   var btn=document.getElementById("sbtn");
@@ -327,7 +326,7 @@ async function doSubmit(){
   try{
     await window._save({
       name:name,role:document.getElementById("role").value.trim(),store:store,date:date,
-      mood:sc.mood||0,stress:sc.stress||0,collab:sc.collab||0,stay:sc.stay||0,
+      mood:sc.mood||0,stress:sc.stress||0,collab:sc.collab||0,stay:sc.stay||null,
       stressSrc:getSel("stressSrc"),quit:getSel("quit")[0]||"",
       conflict:getSel("conflict")[0]||"",bossContact:getSel("bossContact")[0]||"",
       progress:getSel("progress")[0]||"",signals:getSigs(),win:win,
