@@ -195,11 +195,23 @@ window.sendReply=async function(name,store,message){
     timestamp:serverTimestamp()
   });
 };
+window.updateReply=async function(replyId,message){
+  const {updateDoc}=await import('https://www.gstatic.com/firebasejs/11.7.1/firebase-firestore.js');
+  await updateDoc(doc(db,'manager_replies',replyId),{
+    message,
+    date:new Date().toLocaleDateString('zh-TW'),
+    timestamp:serverTimestamp()
+  });
+};
+window.deleteRecord=async function(recordId){
+  const {deleteDoc}=await import('https://www.gstatic.com/firebasejs/11.7.1/firebase-firestore.js');
+  await deleteDoc(doc(db,'daily_checkins',recordId));
+};
 window.loadPrevReply=async function(name,store){
   try{
     const q=query(collection(db,'manager_replies'),where('name','==',name),where('store','==',store),orderBy('timestamp','desc'),limit(1));
     const snap=await getDocs(q);
-    if(!snap.empty)return snap.docs[0].data();
+    if(!snap.empty)return{id:snap.docs[0].id,...snap.docs[0].data()};
   }catch(e){}
   return null;
 };
@@ -316,7 +328,7 @@ async function show(name){
   const sb=document.getElementById('sb-'+name);if(sb)sb.classList.add('act');
   const h=allH.find(x=>x.name===name);if(!h)return;
   const l=h.latest||{},tips=genTips(h,[]),sigs=l.signals||[];
-  const sorted=[...h.records].sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  const sorted=[...h.records].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   const urgents=tips.filter(t=>t.u==='緊急');
   const alertHTML=urgents.length?`<div class="alert"><div class="alert-body"><strong>需要立即關注（${urgents.length}項）</strong>${urgents.map(t=>t.txt).join('<br>')}</div></div>`:'';
   const advHTML=`<div class="advice"><div class="adv-title">本週主管行動建議</div>${tips.map(t=>`<div class="adv-item"><span class="abadge" style="background:${uBg[t.u]};color:${uCo[t.u]};border:1px solid ${uBd[t.u]}">${t.u}</span><span>${t.txt}</span></div>`).join('')}</div>`;
@@ -329,7 +341,16 @@ async function show(name){
 
   // 讀取上一則主管留言
   const prevReply=await window.loadPrevReply(name,currentStore);
-  const prevReplyHTML=prevReply?`<div class="prev-reply">上次留言：${prevReply.message}<div class="prev-date">${prevReply.date}</div></div>`:'';
+  const prevReplyId=prevReply?prevReply.id:'';
+  const prevReplyHTML=prevReply?
+    `<div class="prev-reply">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <span>上次留言</span>
+        <button onclick="editReply('${prevReplyId}','${name}')" style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);color:#fff;font-size:11px;padding:2px 8px;border-radius:6px;cursor:pointer">修改</button>
+      </div>
+      <div id="prev-msg-text">${prevReply.message}</div>
+      <div class="prev-date">${prevReply.date}</div>
+    </div>`:'';
 
   document.getElementById('main').innerHTML=`
     ${alertHTML}
@@ -354,12 +375,20 @@ async function show(name){
     <div class="reply-box">
       <div class="rt">📣 留言給 ${h.name}（新人下次填報會看到）</div>
       <textarea id="reply-input" placeholder="例：今天看到你撐過去了，繼續加油！有什麼困難隨時跟我說…"></textarea>
-      <button class="send-btn" onclick="doSendReply('${h.name}')">送出留言</button>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="send-btn" onclick="doSendReply('${h.name}')">送出留言</button>
+      </div>
       ${prevReplyHTML}
     </div>
 
     ${l.msg||l.win?`<div class="card"><div class="ch"><div class="ct">今日留言</div><div class="cs">${latestDate}</div></div>${l.msg?`<div class="qb">${l.msg}</div>`:''}${l.win?`<div style="font-size:12px;color:var(--t3);margin-top:10px;margin-bottom:4px">今天做到的事</div><div class="wb">${l.win}</div>`:''}</div>`:''}
-    <div class="card"><div class="ch"><div class="ct">歷史趨勢</div><div class="cs">全部 ${sorted.length} 筆</div></div>${sorted.length>0?histHTML:'<div style="color:var(--t3);font-size:13px;padding:20px 0;text-align:center">資料不足</div>'}</div>`;
+    <div class="card">
+      <div class="ch">
+        <div class="ct">歷史趨勢</div>
+        <div class="cs">全部 ${sorted.length} 筆 · <span style="color:var(--red);cursor:pointer" onclick="openDelRecord('${h.name}')">刪除單筆</span></div>
+      </div>
+      ${sorted.length>0?histHTML:'<div style="color:var(--t3);font-size:13px;padding:20px 0;text-align:center">資料不足</div>'}
+    </div>`;
 }
 async function doSendReply(name){
   const msg=document.getElementById('reply-input')?.value.trim();
@@ -371,10 +400,35 @@ async function doSendReply(name){
     btn.textContent='✓ 已送出';
     btn.style.background='rgba(255,255,255,.35)';
     document.getElementById('reply-input').value='';
+    // 更新上次留言顯示
+    const prev=document.querySelector('.prev-reply');
+    if(prev){
+      document.getElementById('prev-msg-text').textContent=msg;
+    }
   }catch(e){
     alert('送出失敗，請再試一次');
     btn.disabled=false;btn.textContent='送出留言';
   }
+}
+async function editReply(replyId,name){
+  const currentMsg=document.getElementById('prev-msg-text')?.textContent||'';
+  const newMsg=prompt('修改留言內容：',currentMsg);
+  if(!newMsg||newMsg.trim()===currentMsg)return;
+  try{
+    await window.updateReply(replyId,newMsg.trim());
+    document.getElementById('prev-msg-text').textContent=newMsg.trim();
+    alert('留言已更新！');
+  }catch(e){alert('更新失敗，請再試一次');}
+}
+let delRecordName=null;
+function openDelRecord(name){
+  delRecordName=name;
+  const h=allH.find(x=>x.name===name);
+  if(!h)return;
+  const sorted=[...h.records].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const opts=sorted.map(r=>`<option value="${r.id}">${r.date||'未知日期'} · ${['😞','😕','😐','😊','😄'][r.mood-1]||''} 心情${r.mood||'?'}</option>`).join('');
+  document.getElementById('del-msg').innerHTML=`選擇要刪除的填報紀錄：<br><br><select id="del-record-select" style="width:100%;padding:8px;border-radius:8px;border:1px solid #eee;margin-top:4px;font-size:13px">${opts}</select>`;
+  document.getElementById('del-modal').classList.add('open');
 }
 function openDel(name){
   pendingDel=name;
@@ -383,7 +437,25 @@ function openDel(name){
   document.getElementById('del-modal').classList.add('open');
 }
 function closeModal(){document.getElementById('del-modal').classList.remove('open');pendingDel=null;}
-async function confirmDel(){if(!pendingDel)return;const name=pendingDel;closeModal();try{await window.deleteName(name);await window.loadAll();}catch(e){alert('刪除失敗：'+e.message);}}
+async function confirmDel(){
+  // 判斷是刪整個人還是單筆
+  const recordSelect=document.getElementById('del-record-select');
+  if(recordSelect){
+    // 刪單筆
+    const recordId=recordSelect.value;
+    if(!recordId){closeModal();return;}
+    closeModal();
+    try{
+      await window.deleteRecord(recordId);
+      await window.loadAll();
+    }catch(e){alert('刪除失敗：'+e.message);}
+  }else{
+    // 刪整個人
+    if(!pendingDel)return;
+    const name=pendingDel;closeModal();
+    try{await window.deleteName(name);await window.loadAll();}catch(e){alert('刪除失敗：'+e.message);}
+  }
+}
 function exportCSV(){
   if(!window._raw||!window._raw.length){alert('目前沒有資料');return;}
   const rows=[['姓名','職位','天數','心情','壓力','人際','留任意願','離職念頭','壓力來源','緊急訊號','留言','時間']];
