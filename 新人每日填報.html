@@ -60,8 +60,9 @@ textarea:focus,input:focus,select:focus{outline:none;border-color:var(--brand)}
 <div class="wrap" id="fw">
   <div id="manager-msg-area"></div>
   <div id="member-reply-area" style="display:none;margin-bottom:.75rem">
-    <div class="ql" style="margin-bottom:6px;font-size:12px;color:var(--t3)">💬 回覆主管留言</div>
-    <textarea id="member-reply-input" style="width:100%;padding:9px 11px;border:1.5px solid var(--mid);border-radius:9px;font-size:13px;background:#fff;color:#2a1a15;font-family:inherit;resize:none;min-height:60px" placeholder="有什麼想回覆主管的嗎？（選填）"></textarea>
+    <div class="ql" style="margin-bottom:6px;font-size:13px;font-weight:600;color:#2a1a15">回覆主管留言 <span style="color:var(--brand);font-size:11px">＊必填</span></div>
+    <div class="qs" style="margin-bottom:6px">主管留言給你，記得回覆讓他知道你有看到 😊</div>
+    <textarea id="member-reply-input" style="width:100%;padding:9px 11px;border:1.5px solid var(--mid);border-radius:9px;font-size:13px;background:#fff;color:#2a1a15;font-family:inherit;resize:none;min-height:60px" placeholder="例：謝謝主管，我會繼續加油的！…"></textarea>
   </div>
 
   <div class="name-row">
@@ -324,6 +325,12 @@ async function doSubmit(){
   var dayOfWeek2=new Date().getDay();if(dayOfWeek2===1&&!sc.stay){alert("請填寫本週留任意願");return;}
   var win=document.getElementById("win").value.trim();
   if(!win){alert("請填寫今天做到的一件小事");return;}
+  // 有主管留言時，夥伴回覆必填
+  var replyArea=document.getElementById("member-reply-area");
+  if(replyArea&&replyArea.style.display!=="none"){
+    var memberReply=document.getElementById("member-reply-input").value.trim();
+    if(!memberReply){alert("主管有留言給你，請填寫回覆內容");return;}
+  }
   var btn=document.getElementById("sbtn");
   btn.disabled=true;btn.textContent="送出中…";
   var randomAnswers={};

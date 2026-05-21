@@ -369,17 +369,26 @@ async function show(name){
   }).join('');
   const latestDate=l.date||l.timestamp?.toDate?.().toLocaleDateString('zh-TW')||'';
 
-  // 讀取上一則主管留言
+  // 讀取上一則主管留言，以及最新填報中的夥伴回覆
   const prevReply=await window.loadPrevReply(name,currentStore);
   const prevReplyId=prevReply?prevReply.id:'';
+  // 找最新一筆有memberReply的填報
+  const latestMemberReply=sorted.find(r=>r.memberReply)?.memberReply||'';
   const prevReplyHTML=prevReply?
     `<div class="prev-reply">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-        <span>上次留言</span>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span style="font-weight:600">上次留言紀錄</span>
         <button onclick="editReply('${prevReplyId}','${name}')" style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);color:#fff;font-size:11px;padding:2px 8px;border-radius:6px;cursor:pointer">修改</button>
       </div>
-      <div id="prev-msg-text">${prevReply.message}</div>
-      <div class="prev-date">${prevReply.date}</div>
+      <div style="background:rgba(255,255,255,.1);border-radius:8px;padding:10px;margin-bottom:8px">
+        <div style="font-size:11px;opacity:.7;margin-bottom:4px">主管留言</div>
+        <div id="prev-msg-text" style="font-size:13px;line-height:1.6">${prevReply.message}</div>
+        <div class="prev-date">${prevReply.date}</div>
+      </div>
+      ${latestMemberReply?`<div style="background:rgba(255,255,255,.15);border-radius:8px;padding:10px">
+        <div style="font-size:11px;opacity:.7;margin-bottom:4px">夥伴回覆</div>
+        <div style="font-size:13px;line-height:1.6">${latestMemberReply}</div>
+      </div>`:`<div style="font-size:12px;opacity:.6;font-style:italic">夥伴尚未回覆</div>`}
     </div>`:'';
 
   document.getElementById('main').innerHTML=`
