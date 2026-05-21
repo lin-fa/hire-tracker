@@ -332,10 +332,40 @@ async function show(name){
   const urgents=tips.filter(t=>t.u==='緊急');
   const alertHTML=urgents.length?`<div class="alert"><div class="alert-body"><strong>需要立即關注（${urgents.length}項）</strong>${urgents.map(t=>t.txt).join('<br>')}</div></div>`:'';
   const advHTML=`<div class="advice"><div class="adv-title">本週主管行動建議</div>${tips.map(t=>`<div class="adv-item"><span class="abadge" style="background:${uBg[t.u]};color:${uCo[t.u]};border:1px solid ${uBd[t.u]}">${t.u}</span><span>${t.txt}</span></div>`).join('')}</div>`;
-  const histHTML=sorted.map(r=>{
+  const histHTML=sorted.map((r,idx)=>{
     const qc=r.quit==='已經很認真在考慮'?`<span style="color:#dc2626;font-weight:500">考慮離職</span>`:r.quit==='今天想很多次'?`<span style="color:#dc2626">有念頭</span>`:r.quit==='偶爾閃過'?`<span style="color:#92400e">偶爾閃過</span>`:`<span style="color:var(--t3)">穩定</span>`;
     const rowDate=r.date||'';
-    return `<div class="hrow"><div class="hday" style="width:70px;font-size:11px">${rowDate}</div><div class="hbars">${[['mood','心情'],['stress','壓力'],['collab','人際'],['stay','留任']].map(([k,lb])=>{const v=r[k]||0,p=v/5*100;const c=k==='stress'?(v>=4?'#dc2626':v>=3?'#f59e0b':'#16a34a'):(v>=4?'#16a34a':v>=3?'#f59e0b':'#dc2626');return`<div class="hbw"><div class="hbl">${lb}</div><div class="hbb"><div class="hbf" style="width:${p}%;background:${c}"></div></div></div>`;}).join('')}</div><div class="hq">${qc}</div></div>`;
+    // 詳細內容
+    const moodEmoji=['😞','😕','😐','😊','😄'][r.mood-1]||'';
+    const stressEmoji=['🌱','😌','😤','😰','🤯'][r.stress-1]||'';
+    const collabEmoji=['😣','😕','😐','😊','🤗'][r.collab-1]||'';
+    const stayEmoji=['🚪','😶','🤔','😊','💪'][r.stay-1]||'';
+    const randomAnswersHTML=r.randomAnswers?Object.entries(r.randomAnswers).filter(([k,v])=>v).map(([k,v])=>`<div style="font-size:12px;color:var(--t2);padding:4px 0;border-bottom:1px solid var(--bd)"><span style="color:var(--t3);font-size:11px">特別題</span> ${v}</div>`).join(''):'';
+    const detail=`<div id="detail-${r.id}" style="display:none;padding:12px;background:var(--s2);border-radius:0 0 10px 10px;margin-top:-4px;border:1px solid var(--bd);border-top:none">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+        <div style="font-size:12px"><span style="color:var(--t3)">心情</span> ${moodEmoji} ${r.mood||'-'}/5</div>
+        <div style="font-size:12px"><span style="color:var(--t3)">壓力</span> ${stressEmoji} ${r.stress||'-'}/5</div>
+        <div style="font-size:12px"><span style="color:var(--t3)">人際</span> ${collabEmoji} ${r.collab||'-'}/5</div>
+        <div style="font-size:12px"><span style="color:var(--t3)">留任</span> ${stayEmoji} ${r.stay||'-'}/5</div>
+      </div>
+      ${r.stressSrc?.length?`<div style="font-size:12px;margin-bottom:6px"><span style="color:var(--t3)">壓力來源：</span>${r.stressSrc.join('、')}</div>`:''}
+      ${r.quit?`<div style="font-size:12px;margin-bottom:6px"><span style="color:var(--t3)">離職念頭：</span><span style="color:${r.quit.includes('考慮')||r.quit.includes('多次')?'#dc2626':'var(--t1)'}">${r.quit}</span></div>`:''}
+      ${r.bossContact?`<div style="font-size:12px;margin-bottom:6px"><span style="color:var(--t3)">主管有說話：</span>${r.bossContact}</div>`:''}
+      ${r.progress?`<div style="font-size:12px;margin-bottom:6px"><span style="color:var(--t3)">進步狀況：</span>${r.progress}</div>`:''}
+      ${r.signals?.length?`<div style="font-size:12px;margin-bottom:6px"><span style="color:#dc2626">緊急訊號：</span>${r.signals.join('、')}</div>`:''}
+      ${r.win?`<div style="font-size:12px;margin-bottom:6px;padding:8px;background:var(--light);border-radius:6px"><span style="color:var(--dark)">✨ 今天做到：</span>${r.win}</div>`:''}
+      ${r.msg?`<div style="font-size:12px;margin-bottom:6px;padding:8px;background:#fff;border-left:3px solid var(--brand);border-radius:0 6px 6px 0"><span style="color:var(--t3)">給主管的話：</span>${r.msg}</div>`:''}
+      ${r.memberReply?`<div style="font-size:12px;margin-bottom:6px;padding:8px;background:var(--light);border-left:3px solid var(--mid);border-radius:0 6px 6px 0"><span style="color:var(--dark)">夥伴回覆主管：</span>${r.memberReply}</div>`:''}
+      ${randomAnswersHTML?`<div style="margin-top:6px">${randomAnswersHTML}</div>`:''}
+    </div>`;
+    return `<div>
+      <div class="hrow" style="cursor:pointer" onclick="toggleDetail('${r.id}')">
+        <div class="hday" style="width:70px;font-size:11px">${rowDate}</div>
+        <div class="hbars">${[['mood','心情'],['stress','壓力'],['collab','人際'],['stay','留任']].map(([k,lb])=>{const v=r[k]||0,p=v/5*100;const c=k==='stress'?(v>=4?'#dc2626':v>=3?'#f59e0b':'#16a34a'):(v>=4?'#16a34a':v>=3?'#f59e0b':'#dc2626');return`<div class="hbw"><div class="hbl">${lb}</div><div class="hbb"><div class="hbf" style="width:${p}%;background:${c}"></div></div></div>`;}).join('')}</div>
+        <div style="display:flex;align-items:center;gap:8px">${qc}<span style="color:var(--t3);font-size:12px">▼</span></div>
+      </div>
+      ${detail}
+    </div>`;
   }).join('');
   const latestDate=l.date||l.timestamp?.toDate?.().toLocaleDateString('zh-TW')||'';
 
@@ -389,6 +419,16 @@ async function show(name){
       </div>
       ${sorted.length>0?histHTML:'<div style="color:var(--t3);font-size:13px;padding:20px 0;text-align:center">資料不足</div>'}
     </div>`;
+}
+function toggleDetail(id){
+  const el=document.getElementById('detail-'+id);
+  if(!el)return;
+  const isOpen=el.style.display!=='none';
+  el.style.display=isOpen?'none':'block';
+  // 箭頭轉向
+  const row=el.previousElementSibling;
+  const arrow=row?.querySelector('span:last-child');
+  if(arrow)arrow.textContent=isOpen?'▼':'▲';
 }
 async function doSendReply(name){
   const msg=document.getElementById('reply-input')?.value.trim();

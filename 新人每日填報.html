@@ -59,6 +59,10 @@ textarea:focus,input:focus,select:focus{outline:none;border-color:var(--brand)}
 
 <div class="wrap" id="fw">
   <div id="manager-msg-area"></div>
+  <div id="member-reply-area" style="display:none;margin-bottom:.75rem">
+    <div class="ql" style="margin-bottom:6px;font-size:12px;color:var(--t3)">💬 回覆主管留言</div>
+    <textarea id="member-reply-input" style="width:100%;padding:9px 11px;border:1.5px solid var(--mid);border-radius:9px;font-size:13px;background:#fff;color:#2a1a15;font-family:inherit;resize:none;min-height:60px" placeholder="有什麼想回覆主管的嗎？（選填）"></textarea>
+  </div>
 
   <div class="name-row">
     <div><div class="ql" style="margin-bottom:6px">姓名 <span class="req">＊</span></div><input type="text" id="name" placeholder="你的名字"></div>
@@ -227,6 +231,7 @@ window._loadMsg=async function(name,store){
       const d=snap.docs[0].data();
       document.getElementById("manager-msg-area").innerHTML=
         "<div class=\"manager-msg\"><div class=\"mtitle\">📣 主管留言給你</div><div class=\"mcontent\">"+d.message+"</div><div class=\"mdate\">"+(d.date||"")+"</div></div>";
+      document.getElementById("member-reply-area").style.display="block";
     }
   }catch(e){console.log("留言讀取錯誤",e);}
 };
@@ -331,6 +336,7 @@ async function doSubmit(){
       conflict:getSel("conflict")[0]||"",bossContact:getSel("bossContact")[0]||"",
       progress:getSel("progress")[0]||"",signals:getSigs(),win:win,
       msg:document.getElementById("msg").value,
+      memberReply:document.getElementById("member-reply-input")?.value.trim()||"",
       randomAnswers:randomAnswers,todayQIds:todayQs.map(function(q){return q.id;}),
       formType:"daily"
     });
