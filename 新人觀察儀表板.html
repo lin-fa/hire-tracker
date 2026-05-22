@@ -207,13 +207,13 @@ window.deleteRecord=async function(recordId){
   const {deleteDoc}=await import('https://www.gstatic.com/firebasejs/11.7.1/firebase-firestore.js');
   await deleteDoc(doc(db,'daily_checkins',recordId));
 };
-window.loadPrevReply=async function(name,store){
+window.loadAllReplies=async function(name,store){
   try{
-    const q=query(collection(db,'manager_replies'),where('name','==',name),where('store','==',store),orderBy('timestamp','desc'),limit(1));
+    const q=query(collection(db,'manager_replies'),where('name','==',name),where('store','==',store),orderBy('timestamp','desc'));
     const snap=await getDocs(q);
-    if(!snap.empty)return{id:snap.docs[0].id,...snap.docs[0].data()};
+    return snap.docs.map(d=>({id:d.id,...d.data()}));
   }catch(e){}
-  return null;
+  return [];
 };
 window.loadAll();
 </script>
@@ -369,27 +369,43 @@ async function show(name){
   }).join('');
   const latestDate=l.date||l.timestamp?.toDate?.().toLocaleDateString('zh-TW')||'';
 
-  // 讀取上一則主管留言，以及最新填報中的夥伴回覆
-  const prevReply=await window.loadPrevReply(name,currentStore);
-  const prevReplyId=prevReply?prevReply.id:'';
-  // 找最新一筆有memberReply的填報
-  const latestMemberReply=sorted.find(r=>r.memberReply)?.memberReply||'';
-  const prevReplyHTML=prevReply?
-    `<div class="prev-reply">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-        <span style="font-weight:600">上次留言紀錄</span>
-        <button onclick="editReply('${prevReplyId}','${name}')" style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);color:#fff;font-size:11px;padding:2px 8px;border-radius:6px;cursor:pointer">修改</button>
+  // 讀取所有主管留言
+  const allReplies=await window.loadAllReplies(name,currentStore);
+  const latestReply=allReplies[0]||null;
+
+  // 留言歷史區塊
+  const repliesHTML=allReplies.length>0?allReplies.map((reply,i)=>{
+    // 找對應日期的夥伴回覆（找日期相近的填報）
+    const replyDate=reply.date||'';
+    const matchRecord=sorted.find(r=>r.date===replyDate)||null;
+    const memberReply=matchRecord?.memberReply||'';
+    return `<div style="margin-bottom:10px;padding-bottom:10px;border-bottom:${i<allReplies.length-1?'1px solid rgba(255,255,255,.15)':'none'}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+        <div style="font-size:10px;opacity:.65">${replyDate} · ${reply.store||currentStore}</div>
+        ${i===0?`<button onclick="editReply('${reply.id}','${name}')" style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);color:#fff;font-size:10px;padding:2px 7px;border-radius:5px;cursor:pointer">修改</button>`:''}
       </div>
-      <div style="background:rgba(255,255,255,.1);border-radius:8px;padding:10px;margin-bottom:8px">
-        <div style="font-size:11px;opacity:.7;margin-bottom:4px">主管留言</div>
-        <div id="prev-msg-text" style="font-size:13px;line-height:1.6">${prevReply.message}</div>
-        <div class="prev-date">${prevReply.date}</div>
+      <div style="background:rgba(255,255,255,.12);border-radius:8px;padding:9px;margin-bottom:${memberReply?'6px':'0'}">
+        <div style="font-size:10px;opacity:.65;margin-bottom:3px">主管</div>
+        <div id="${i===0?'prev-msg-text':''}" style="font-size:13px;line-height:1.6">${reply.message}</div>
       </div>
-      ${latestMemberReply?`<div style="background:rgba(255,255,255,.15);border-radius:8px;padding:10px">
-        <div style="font-size:11px;opacity:.7;margin-bottom:4px">夥伴回覆</div>
-        <div style="font-size:13px;line-height:1.6">${latestMemberReply}</div>
-      </div>`:`<div style="font-size:12px;opacity:.6;font-style:italic">夥伴尚未回覆</div>`}
-    </div>`:'';
+      ${memberReply?`<div style="background:rgba(255,255,255,.2);border-radius:8px;padding:9px">
+        <div style="font-size:10px;opacity:.65;margin-bottom:3px">夥伴回覆</div>
+        <div style="font-size:13px;line-height:1.6">${memberReply}</div>
+      </div>`:`<div style="font-size:11px;opacity:.55;font-style:italic;padding:4px 0">夥伴尚未回覆</div>`}
+    </div>`;
+  }).join(''):'';
+
+  const replyBoxHTML=`<div class="reply-box">
+    <div class="rt">📣 留言給 ${h.name}（新人下次填報會看到）</div>
+    <textarea id="reply-input" placeholder="例：今天看到你撐過去了，繼續加油！有什麼困難隨時跟我說…"></textarea>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="send-btn" onclick="doSendReply('${h.name}')">送出留言</button>
+    </div>
+    ${allReplies.length>0?`<div class="prev-reply">
+      <div style="font-weight:600;margin-bottom:10px">留言與回覆紀錄</div>
+      ${repliesHTML}
+    </div>`:''}
+  </div>`;
 
   document.getElementById('main').innerHTML=`
     ${alertHTML}
@@ -410,15 +426,7 @@ async function show(name){
     </div>
     ${advHTML}
 
-    <!-- 主管留言區 -->
-    <div class="reply-box">
-      <div class="rt">📣 留言給 ${h.name}（新人下次填報會看到）</div>
-      <textarea id="reply-input" placeholder="例：今天看到你撐過去了，繼續加油！有什麼困難隨時跟我說…"></textarea>
-      <div style="display:flex;gap:8px;margin-top:8px">
-        <button class="send-btn" onclick="doSendReply('${h.name}')">送出留言</button>
-      </div>
-      ${prevReplyHTML}
-    </div>
+    ${replyBoxHTML}
 
     ${l.msg||l.win?`<div class="card"><div class="ch"><div class="ct">今日留言</div><div class="cs">${latestDate}</div></div>${l.msg?`<div class="qb">${l.msg}</div>`:''}${l.win?`<div style="font-size:12px;color:var(--t3);margin-top:10px;margin-bottom:4px">今天做到的事</div><div class="wb">${l.win}</div>`:''}</div>`:''}
     <div class="card">
@@ -465,7 +473,8 @@ async function editReply(replyId,name){
   if(!newMsg||newMsg.trim()===currentMsg)return;
   try{
     await window.updateReply(replyId,newMsg.trim());
-    document.getElementById('prev-msg-text').textContent=newMsg.trim();
+    const el=document.getElementById('prev-msg-text');
+    if(el)el.textContent=newMsg.trim();
     alert('留言已更新！');
   }catch(e){alert('更新失敗，請再試一次');}
 }

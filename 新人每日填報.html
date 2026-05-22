@@ -212,7 +212,7 @@ textarea:focus,input:focus,select:focus{outline:none;border-color:var(--brand)}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-app.js";
-import { getFirestore, collection, addDoc, query, where, orderBy, limit, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, query, where, orderBy, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-firestore.js";
 const app = initializeApp({
   apiKey:"AIzaSyCl8kl4YW_ohHlhFTKNyQyQ-mZn1G7h9HM",
   authDomain:"hire-tracker-9e3fc.firebaseapp.com",
@@ -226,12 +226,17 @@ window._save=async d=>await addDoc(collection(db,"daily_checkins"),{...d,timesta
 window._loadMsg=async function(name,store){
   if(!name||!store)return;
   try{
-    const q=query(collection(db,"manager_replies"),where("name","==",name),where("store","==",store),orderBy("timestamp","desc"),limit(1));
+    const q=query(collection(db,"manager_replies"),where("name","==",name),where("store","==",store),orderBy("timestamp","desc"));
     const snap=await getDocs(q);
     if(!snap.empty){
-      const d=snap.docs[0].data();
+      const msgs=snap.docs.map(d=>d.data());
+      const allMsgsHTML=msgs.map((d,i)=>`
+        <div style="background:rgba(255,255,255,${i===0?'.18':'.1'});border-radius:8px;padding:10px;margin-bottom:${i<msgs.length-1?'8px':'0'}">
+          <div style="font-size:10px;opacity:.65;margin-bottom:4px">${d.date||''} · 主管</div>
+          <div style="font-size:14px;line-height:1.7">${d.message}</div>
+        </div>`).join("");
       document.getElementById("manager-msg-area").innerHTML=
-        "<div class=\"manager-msg\"><div class=\"mtitle\">📣 主管留言給你</div><div class=\"mcontent\">"+d.message+"</div><div class=\"mdate\">"+(d.date||"")+"</div></div>";
+        "<div class=\"manager-msg\"><div class=\"mtitle\">📣 主管留言給你</div>"+allMsgsHTML+"</div>";
       document.getElementById("member-reply-area").style.display="block";
     }
   }catch(e){console.log("留言讀取錯誤",e);}
