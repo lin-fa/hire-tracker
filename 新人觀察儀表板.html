@@ -369,19 +369,19 @@ async function show(name){
   }).join('');
   const latestDate=l.date||l.timestamp?.toDate?.().toLocaleDateString('zh-TW')||'';
 
-  // 讀取所有主管留言
+  // 讀取所有主管留言，只顯示今天的
   const allReplies=await window.loadAllReplies(name,currentStore);
+  const today=new Date().toLocaleDateString('zh-TW');
+  const todayReplies=allReplies.filter(r=>r.date===today);
   const latestReply=allReplies[0]||null;
 
-  // 留言歷史區塊
-  const repliesHTML=allReplies.length>0?allReplies.map((reply,i)=>{
-    // 找對應日期的夥伴回覆（找日期相近的填報）
-    const replyDate=reply.date||'';
-    const matchRecord=sorted.find(r=>r.date===replyDate)||null;
+  // 今日留言區塊
+  const repliesHTML=todayReplies.length>0?todayReplies.map((reply,i)=>{
+    const matchRecord=sorted.find(r=>r.date===reply.date)||null;
     const memberReply=matchRecord?.memberReply||'';
-    return `<div style="margin-bottom:10px;padding-bottom:10px;border-bottom:${i<allReplies.length-1?'1px solid rgba(255,255,255,.15)':'none'}">
+    return `<div style="margin-bottom:10px;padding-bottom:10px;border-bottom:${i<todayReplies.length-1?'1px solid rgba(255,255,255,.15)':'none'}">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
-        <div style="font-size:10px;opacity:.65">${replyDate} · ${reply.store||currentStore}</div>
+        <div style="font-size:10px;opacity:.65">${reply.date} · ${reply.store||currentStore}</div>
         ${i===0?`<button onclick="editReply('${reply.id}','${name}')" style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);color:#fff;font-size:10px;padding:2px 7px;border-radius:5px;cursor:pointer">修改</button>`:''}
       </div>
       <div style="background:rgba(255,255,255,.12);border-radius:8px;padding:9px;margin-bottom:${memberReply?'6px':'0'}">
@@ -401,10 +401,10 @@ async function show(name){
     <div style="display:flex;gap:8px;margin-top:8px">
       <button class="send-btn" onclick="doSendReply('${h.name}')">送出留言</button>
     </div>
-    ${allReplies.length>0?`<div class="prev-reply">
-      <div style="font-weight:600;margin-bottom:10px">留言與回覆紀錄</div>
+    ${todayReplies.length>0?`<div class="prev-reply">
+      <div style="font-weight:600;margin-bottom:10px">今日留言紀錄</div>
       ${repliesHTML}
-    </div>`:''}
+    </div>`:``}
   </div>`;
 
   document.getElementById('main').innerHTML=`
