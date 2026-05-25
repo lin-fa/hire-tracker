@@ -226,18 +226,21 @@ window._save=async d=>await addDoc(collection(db,"daily_checkins"),{...d,timesta
 window._loadMsg=async function(name,store){
   if(!name||!store)return;
   try{
+    const today=new Date().toLocaleDateString("zh-TW");
     const q=query(collection(db,"manager_replies"),where("name","==",name),where("store","==",store),orderBy("timestamp","desc"));
     const snap=await getDocs(q);
     if(!snap.empty){
-      const msgs=snap.docs.map(d=>d.data());
-      const allMsgsHTML=msgs.map((d,i)=>`
-        <div style="background:rgba(255,255,255,${i===0?'.18':'.1'});border-radius:8px;padding:10px;margin-bottom:${i<msgs.length-1?'8px':'0'}">
-          <div style="font-size:10px;opacity:.65;margin-bottom:4px">${d.date||''} · 主管</div>
-          <div style="font-size:14px;line-height:1.7">${d.message}</div>
-        </div>`).join("");
-      document.getElementById("manager-msg-area").innerHTML=
-        "<div class=\"manager-msg\"><div class=\"mtitle\">📣 主管留言給你</div>"+allMsgsHTML+"</div>";
-      document.getElementById("member-reply-area").style.display="block";
+      const todayMsgs=snap.docs.map(d=>d.data()).filter(d=>d.date===today);
+      if(todayMsgs.length>0){
+        const msgsHTML=todayMsgs.map((d,i)=>`
+          <div style="background:rgba(255,255,255,.15);border-radius:8px;padding:10px;margin-bottom:${i<todayMsgs.length-1?"8px":"0"}">
+            <div style="font-size:10px;opacity:.65;margin-bottom:4px">主管</div>
+            <div style="font-size:14px;line-height:1.7">${d.message}</div>
+          </div>`).join("");
+        document.getElementById("manager-msg-area").innerHTML=
+          "<div class=\"manager-msg\"><div class=\"mtitle\">📣 主管今日留言給你</div>"+msgsHTML+"</div>";
+        document.getElementById("member-reply-area").style.display="block";
+      }
     }
   }catch(e){console.log("留言讀取錯誤",e);}
 };
