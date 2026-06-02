@@ -332,6 +332,11 @@ async function show(name){
   const urgents=tips.filter(t=>t.u==='緊急');
   const alertHTML=urgents.length?`<div class="alert"><div class="alert-body"><strong>需要立即關注（${urgents.length}項）</strong>${urgents.map(t=>t.txt).join('<br>')}</div></div>`:'';
   const advHTML=`<div class="advice"><div class="adv-title">本週主管行動建議</div>${tips.map(t=>`<div class="adv-item"><span class="abadge" style="background:${uBg[t.u]};color:${uCo[t.u]};border:1px solid ${uBd[t.u]}">${t.u}</span><span>${t.txt}</span></div>`).join('')}</div>`;
+
+  // 先讀取所有主管留言（histHTML裡要用）
+  const allReplies=await window.loadAllReplies(name,currentStore);
+  const today=new Date().toLocaleDateString('zh-TW');
+  const todayReplies=allReplies.filter(r=>r.date===today);
   const histHTML=sorted.map((r,idx)=>{
     const qc=r.quit==='已經很認真在考慮'?`<span style="color:#dc2626;font-weight:500">考慮離職</span>`:r.quit==='今天想很多次'?`<span style="color:#dc2626">有念頭</span>`:r.quit==='偶爾閃過'?`<span style="color:#92400e">偶爾閃過</span>`:`<span style="color:var(--t3)">穩定</span>`;
     const rowDate=r.date||'';
@@ -340,9 +345,56 @@ async function show(name){
     const stressEmoji=['🌱','😌','😤','😰','🤯'][r.stress-1]||'';
     const collabEmoji=['😣','😕','😐','😊','🤗'][r.collab-1]||'';
     const stayEmoji=['🚪','😶','🤔','😊','💪'][r.stay-1]||'';
-    const randomAnswersHTML=r.randomAnswers?Object.entries(r.randomAnswers).filter(([k,v])=>v).map(([k,v])=>`<div style="font-size:12px;color:var(--t2);padding:4px 0;border-bottom:1px solid var(--bd)"><span style="color:var(--t3);font-size:11px">特別題</span> ${v}</div>`).join(''):'';
-    const detail=`<div id="detail-${r.id}" style="display:none;padding:12px;background:var(--s2);border-radius:0 0 10px 10px;margin-top:-4px;border:1px solid var(--bd);border-top:none">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+
+    // 題目對照表
+    const qLabels={
+      q_learned:'今天學到一件之前不會的事，是什麼？',
+      q_redo:'如果今天重來一次，你會想改變什麼？',
+      q_best_growth:'你覺得自己哪個部分進步最多？',
+      q_asked:'今天有沒有主動問過任何問題？',
+      q_taught:'今天有沒有人教你做事，還是都自己摸索？',
+      q_belong:'你覺得自己有沒有融入這個團隊？',
+      q_helper:'有沒有人讓你覺得「這個人真的幫到我」？',
+      q_if_manager:'如果你是主管，你今天會想改善什麼？',
+      q_handle:'今天遇到最難處理的事是什麼？',
+      q_dare:'有不懂但不敢問的事嗎？',
+      q_pace:'今天跟不跟得上工作節奏？',
+      q_body:'身體狀態怎麼樣？',
+      q_moment:'今天有沒有讓你覺得「還好有來上班」的瞬間？',
+      q_recommend:'如果朋友問你這份工作好不好，你會怎麼說？',
+      q_reason_stay:'讓你想繼續做下去的原因是什麼？',
+      q_achievement:'今天有沒有什麼事讓你有成就感？',
+      q_expectation:'你覺得主管對你的期待是什麼？你有達到嗎？',
+      q_gap:'這份工作跟你當初想像的，差在哪裡？',
+      q_improve_self:'你覺得自己目前最需要加強的是什麼？',
+      q_msg_to_boss:'如果可以跟主管說一件事，你最想說什麼？',
+    };
+
+    const randomAnswersHTML=r.randomAnswers?Object.entries(r.randomAnswers).filter(([k,v])=>v).map(([k,v])=>`
+      <div style="padding:10px;background:#fff;border-radius:8px;margin-bottom:6px;border-left:3px solid var(--mid)">
+        <div style="font-size:11px;color:var(--brand);font-weight:600;margin-bottom:4px">${qLabels[k]||k}</div>
+        <div style="font-size:13px;color:var(--t1);line-height:1.6">${v}</div>
+      </div>`).join(''):'';
+
+    // 找當天主管留言
+    const dayReplies=allReplies.filter(rep=>rep.date===rowDate);
+    const dayRepliesHTML=dayReplies.length>0?dayReplies.map(rep=>{
+      // 找對應的夥伴回覆
+      const memberReply=r.memberReply||'';
+      return `<div style="border-radius:8px;overflow:hidden;margin-bottom:6px">
+        <div style="padding:10px;background:linear-gradient(135deg,var(--dark),var(--brand))">
+          <div style="font-size:10px;color:rgba(255,255,255,.65);margin-bottom:4px">主管留言</div>
+          <div style="font-size:13px;color:#fff;line-height:1.6">${rep.message}</div>
+        </div>
+        ${memberReply?`<div style="padding:10px;background:var(--light)">
+          <div style="font-size:10px;color:var(--brand);margin-bottom:4px">夥伴回覆</div>
+          <div style="font-size:13px;color:var(--dark);line-height:1.6">${memberReply}</div>
+        </div>`:`<div style="padding:8px 10px;background:var(--s3);font-size:11px;color:var(--t3);font-style:italic">夥伴尚未回覆</div>`}
+      </div>`;
+    }).join(''):'';
+
+    const detail=`<div id="detail-${r.id}" style="display:none;padding:14px;background:var(--s2);border-radius:0 0 10px 10px;margin-top:-4px;border:1px solid var(--bd);border-top:none">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
         <div style="font-size:12px"><span style="color:var(--t3)">心情</span> ${moodEmoji} ${r.mood||'-'}/5</div>
         <div style="font-size:12px"><span style="color:var(--t3)">壓力</span> ${stressEmoji} ${r.stress||'-'}/5</div>
         <div style="font-size:12px"><span style="color:var(--t3)">人際</span> ${collabEmoji} ${r.collab||'-'}/5</div>
@@ -353,10 +405,10 @@ async function show(name){
       ${r.bossContact?`<div style="font-size:12px;margin-bottom:6px"><span style="color:var(--t3)">主管有說話：</span>${r.bossContact}</div>`:''}
       ${r.progress?`<div style="font-size:12px;margin-bottom:6px"><span style="color:var(--t3)">進步狀況：</span>${r.progress}</div>`:''}
       ${r.signals?.length?`<div style="font-size:12px;margin-bottom:6px"><span style="color:#dc2626">緊急訊號：</span>${r.signals.join('、')}</div>`:''}
-      ${r.win?`<div style="font-size:12px;margin-bottom:6px;padding:8px;background:var(--light);border-radius:6px"><span style="color:var(--dark)">✨ 今天做到：</span>${r.win}</div>`:''}
-      ${r.msg?`<div style="font-size:12px;margin-bottom:6px;padding:8px;background:#fff;border-left:3px solid var(--brand);border-radius:0 6px 6px 0"><span style="color:var(--t3)">給主管的話：</span>${r.msg}</div>`:''}
-      ${r.memberReply?`<div style="font-size:12px;margin-bottom:6px;padding:8px;background:var(--light);border-left:3px solid var(--mid);border-radius:0 6px 6px 0"><span style="color:var(--dark)">夥伴回覆主管：</span>${r.memberReply}</div>`:''}
-      ${randomAnswersHTML?`<div style="margin-top:6px">${randomAnswersHTML}</div>`:''}
+      ${r.win?`<div style="font-size:13px;margin-bottom:8px;padding:10px;background:var(--light);border-radius:8px"><span style="color:var(--dark);font-weight:500">✨ 今天做到：</span>${r.win}</div>`:''}
+      ${r.msg?`<div style="font-size:13px;margin-bottom:8px;padding:10px;background:#fff;border-left:3px solid var(--brand);border-radius:0 8px 8px 0"><span style="color:var(--t3)">給主管的話：</span>${r.msg}</div>`:''}
+      ${randomAnswersHTML?`<div style="margin-bottom:8px"><div style="font-size:11px;color:var(--t3);font-weight:600;margin-bottom:8px;letter-spacing:.5px">今日特別題回答</div>${randomAnswersHTML}</div>`:''}
+      ${dayRepliesHTML?`<div style="margin-top:4px"><div style="font-size:11px;color:var(--t3);font-weight:600;margin-bottom:8px;letter-spacing:.5px">主管留言 ↔ 夥伴回覆</div>${dayRepliesHTML}</div>`:''}
     </div>`;
     return `<div>
       <div class="hrow" style="cursor:pointer" onclick="toggleDetail('${r.id}')">
@@ -368,12 +420,6 @@ async function show(name){
     </div>`;
   }).join('');
   const latestDate=l.date||l.timestamp?.toDate?.().toLocaleDateString('zh-TW')||'';
-
-  // 讀取所有主管留言，只顯示今天的
-  const allReplies=await window.loadAllReplies(name,currentStore);
-  const today=new Date().toLocaleDateString('zh-TW');
-  const todayReplies=allReplies.filter(r=>r.date===today);
-  const latestReply=allReplies[0]||null;
 
   // 今日留言區塊
   const repliesHTML=todayReplies.length>0?todayReplies.map((reply,i)=>{
