@@ -342,7 +342,11 @@ async function show(name){
   // 先讀取所有主管留言（histHTML裡要用）
   const allReplies=await window.loadAllReplies(name,currentStore);
   const today=new Date().toLocaleDateString('zh-TW');
-  const todayReplies=allReplies.filter(r=>r.date===today);
+  const todayISO=new Date().toISOString().slice(0,10);
+  const todayReplies=allReplies.filter(r=>{
+    const d=r.date||'';
+    return d===today||d===todayISO;
+  });
   const histHTML=sorted.map((r,idx)=>{
     const qc=r.quit==='已經決定要離職了'?`<span style="color:#dc2626;font-weight:700">決定離職</span>`:
       r.quit==='很認真在考慮，快決定了'?`<span style="color:#dc2626;font-weight:600">快決定了</span>`:
@@ -387,10 +391,21 @@ async function show(name){
         <div style="font-size:13px;color:var(--t1);line-height:1.6">${v}</div>
       </div>`).join(''):'';
 
-    // 找當天主管留言
-    const dayReplies=allReplies.filter(rep=>rep.date===rowDate);
+    // 找當天主管留言（統一日期格式比對）
+    function normalizeDate(d){
+      if(!d)return'';
+      // 轉成 YYYY-MM-DD 格式
+      if(d.includes('-'))return d;
+      // 處理 2026/5/20 或 2026/05/20 格式
+      const parts=d.replace(/\//g,'-').split('-');
+      if(parts.length===3){
+        return parts[0]+'-'+parts[1].padStart(2,'0')+'-'+parts[2].padStart(2,'0');
+      }
+      return d;
+    }
+    const normRowDate=normalizeDate(rowDate);
+    const dayReplies=allReplies.filter(rep=>normalizeDate(rep.date)===normRowDate);
     const dayRepliesHTML=dayReplies.length>0?dayReplies.map(rep=>{
-      // 找對應的夥伴回覆
       const memberReply=r.memberReply||'';
       return `<div style="border-radius:8px;overflow:hidden;margin-bottom:6px">
         <div style="padding:10px;background:linear-gradient(135deg,var(--dark),var(--brand))">
