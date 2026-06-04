@@ -335,6 +335,15 @@ async function show(name){
   const h=allH.find(x=>x.name===name);if(!h)return;
   const l=h.latest||{},tips=genTips(h,[]),sigs=l.signals||[];
   const sorted=[...h.records].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+
+  // 日期格式統一工具
+  function normalizeDate(d){
+    if(!d)return'';
+    if(d.includes('-'))return d;
+    const parts=d.replace(/\//g,'-').split('-');
+    if(parts.length===3)return parts[0]+'-'+parts[1].padStart(2,'0')+'-'+parts[2].padStart(2,'0');
+    return d;
+  }
   const urgents=tips.filter(t=>t.u==='緊急');
   const alertHTML=urgents.length?`<div class="alert"><div class="alert-body"><strong>需要立即關注（${urgents.length}項）</strong>${urgents.map(t=>t.txt).join('<br>')}</div></div>`:'';
   const advHTML=`<div class="advice"><div class="adv-title">本週主管行動建議</div>${tips.map(t=>`<div class="adv-item"><span class="abadge" style="background:${uBg[t.u]};color:${uCo[t.u]};border:1px solid ${uBd[t.u]}">${t.u}</span><span>${t.txt}</span></div>`).join('')}</div>`;
@@ -391,25 +400,17 @@ async function show(name){
         <div style="font-size:13px;color:var(--t1);line-height:1.6">${v}</div>
       </div>`).join(''):'';
 
-    // 找當天主管留言（統一日期格式比對）
-    function normalizeDate(d){
-      if(!d)return'';
-      // 轉成 YYYY-MM-DD 格式
-      if(d.includes('-'))return d;
-      // 處理 2026/5/20 或 2026/05/20 格式
-      const parts=d.replace(/\//g,'-').split('-');
-      if(parts.length===3){
-        return parts[0]+'-'+parts[1].padStart(2,'0')+'-'+parts[2].padStart(2,'0');
-      }
-      return d;
-    }
+    // B方式：找留言日期等於填報日期的留言（主管送出那天）
     const normRowDate=normalizeDate(rowDate);
+    // 找主管在這天送出的留言（以留言的date欄位為準）
     const dayReplies=allReplies.filter(rep=>normalizeDate(rep.date)===normRowDate);
     const dayRepliesHTML=dayReplies.length>0?dayReplies.map(rep=>{
-      const memberReply=r.memberReply||'';
+      // 找那天的填報中有沒有夥伴回覆
+      const matchRecord=sorted.find(r2=>normalizeDate(r2.date)===normalizeDate(rep.date));
+      const memberReply=matchRecord?.memberReply||r.memberReply||'';
       return `<div style="border-radius:8px;overflow:hidden;margin-bottom:6px">
         <div style="padding:10px;background:linear-gradient(135deg,var(--dark),var(--brand))">
-          <div style="font-size:10px;color:rgba(255,255,255,.65);margin-bottom:4px">主管留言</div>
+          <div style="font-size:10px;color:rgba(255,255,255,.65);margin-bottom:4px">主管留言 · ${rep.date}</div>
           <div style="font-size:13px;color:#fff;line-height:1.6">${rep.message}</div>
         </div>
         ${memberReply?`<div style="padding:10px;background:var(--light)">
@@ -509,7 +510,27 @@ async function show(name){
         <div class="cs">全部 ${sorted.length} 筆 · <span style="color:var(--red);cursor:pointer" onclick="openDelRecord('${h.name}')">刪除單筆</span></div>
       </div>
       ${sorted.length>0?histHTML:'<div style="color:var(--t3);font-size:13px;padding:20px 0;text-align:center">資料不足</div>'}
-    </div>`;
+    </div>
+    ${allReplies.length>0?`<div class="card">
+      <div class="ch"><div class="ct">📣 主管留言完整紀錄</div><div class="cs">共 ${allReplies.length} 則</div></div>
+      ${allReplies.map((rep,i)=>{
+        const normD=normalizeDate(rep.date||'');
+        const matchRecord=sorted.find(r2=>normalizeDate(r2.date||'')===normD);
+        const memberReply=matchRecord?.memberReply||'';
+        return `<div style="margin-bottom:${i<allReplies.length-1?'12px':'0'};padding-bottom:${i<allReplies.length-1?'12px':'0'};border-bottom:${i<allReplies.length-1?'1px solid var(--bd)':'none'}">
+          <div style="border-radius:8px;overflow:hidden">
+            <div style="padding:10px 12px;background:linear-gradient(135deg,var(--dark),var(--brand))">
+              <div style="font-size:10px;color:rgba(255,255,255,.65);margin-bottom:4px">${rep.date}</div>
+              <div style="font-size:13px;color:#fff;line-height:1.6">${rep.message}</div>
+            </div>
+            ${memberReply?`<div style="padding:10px 12px;background:var(--light)">
+              <div style="font-size:10px;color:var(--brand);margin-bottom:3px">夥伴回覆</div>
+              <div style="font-size:13px;color:var(--dark);line-height:1.6">${memberReply}</div>
+            </div>`:`<div style="padding:8px 12px;background:var(--s3);font-size:11px;color:var(--t3);font-style:italic">夥伴尚未回覆</div>`}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`:''}`;
 }
 function toggleDetail(id){
   const el=document.getElementById('detail-'+id);
