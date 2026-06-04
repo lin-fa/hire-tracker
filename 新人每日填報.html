@@ -115,15 +115,7 @@ textarea:focus,input:focus,select:focus{outline:none;border-color:var(--brand)}
         <div class="tag" onclick="multi(this)">沒什麼壓力</div>
       </div>
     </div>
-    <div class="q">
-      <div class="ql">有沒有想過要不繼續做？</div>
-      <div class="tags" id="quit">
-        <div class="tag" onclick="single('quit',this)">完全沒有</div>
-        <div class="tag" onclick="single('quit',this)">偶爾閃過</div>
-        <div class="tag warn" onclick="single('quit',this)">今天想很多次</div>
-        <div class="tag warn" onclick="single('quit',this)">已經很認真在考慮</div>
-      </div>
-    </div>
+
   </div>
 
   <div class="slbl">🤝 人際關係</div>
@@ -176,6 +168,23 @@ textarea:focus,input:focus,select:focus{outline:none;border-color:var(--brand)}
     </div>
   </div>
 
+  <div id="friday-quit-section" style="display:none">
+    <div class="slbl">📅 每週評估</div>
+    <div class="card">
+      <div class="q" style="margin-bottom:0">
+        <div class="ql">這週整體來說，你有沒有想過要不繼續做？</div>
+        <div class="qs">每週五才會出現這題，誠實填讓主管更了解你</div>
+        <div class="tags" id="quit">
+          <div class="tag" onclick="single('quit',this)">完全沒有，工作還OK</div>
+          <div class="tag" onclick="single('quit',this)">偶爾閃過，但不嚴重</div>
+          <div class="tag" onclick="single('quit',this)">有想過，還在觀察</div>
+          <div class="tag warn" onclick="single('quit',this)">認真想過，有一些原因</div>
+          <div class="tag warn" onclick="single('quit',this)">很認真在考慮，快決定了</div>
+          <div class="tag warn" onclick="single('quit',this)">已經決定要離職了</div>
+        </div>
+      </div>
+    </div>
+  </div>
   <div class="slbl">🎲 今日特別題 <span style="font-size:10px;color:#b8958a;font-weight:400;letter-spacing:0;text-transform:none">每天不一樣</span></div>
   <div class="card" id="random-questions"></div>
 
@@ -226,22 +235,38 @@ window._save=async d=>await addDoc(collection(db,"daily_checkins"),{...d,timesta
 window._loadMsg=async function(name,store){
   if(!name||!store)return;
   try{
-    const today=new Date().toLocaleDateString("zh-TW");
-    const q=query(collection(db,"manager_replies"),where("name","==",name),where("store","==",store),orderBy("timestamp","desc"));
-    const snap=await getDocs(q);
-    if(!snap.empty){
-      const todayMsgs=snap.docs.map(d=>d.data()).filter(d=>d.date===today);
-      if(todayMsgs.length>0){
-        const msgsHTML=todayMsgs.map((d,i)=>`
-          <div style="background:rgba(255,255,255,.15);border-radius:8px;padding:10px;margin-bottom:${i<todayMsgs.length-1?"8px":"0"}">
-            <div style="font-size:10px;opacity:.65;margin-bottom:4px">主管</div>
-            <div style="font-size:14px;line-height:1.7">${d.message}</div>
-          </div>`).join("");
-        document.getElementById("manager-msg-area").innerHTML=
-          "<div class=\"manager-msg\"><div class=\"mtitle\">📣 主管今日留言給你</div>"+msgsHTML+"</div>";
-        document.getElementById("member-reply-area").style.display="block";
-      }
-    }
+    // 讀取最新一則主管留言
+    const qr=query(collection(db,"manager_replies"),where("name","==",name),where("store","==",store),orderBy("timestamp","desc"));
+    const snap=await getDocs(qr);
+    if(snap.empty)return;
+    const latestReply=snap.docs[0].data();
+    const replyDate=latestReply.date||"";
+
+    // 檢查夥伴在那個日期之後有沒有填報且有回覆
+    const qc=query(collection(db,"daily_checkins"),where("name","==",name),where("store","==",store),orderBy("timestamp","desc"));
+    const csnap=await getDocs(qc);
+    const records=csnap.docs.map(d=>d.data());
+
+    // 找到留言日期之後的填報，看有沒有memberReply
+    const repliedRecord=records.find(function(r){
+      return r.date>=replyDate && r.memberReply && r.memberReply.trim()!=="";
+    });
+
+    // 如果夥伴已回覆，不顯示留言
+    if(repliedRecord)return;
+
+    // 顯示留言（可能有多則同日）
+    const sameDayMsgs=snap.docs.map(d=>d.data()).filter(d=>d.date===replyDate);
+    const msgsHTML=sameDayMsgs.map(function(d,i){
+      return "<div style=\"background:rgba(255,255,255,.15);border-radius:8px;padding:10px;margin-bottom:"+(i<sameDayMsgs.length-1?"8px":"0")+"\">"
+        +"<div style=\"font-size:10px;opacity:.65;margin-bottom:4px\">主管 · "+replyDate+"</div>"
+        +"<div style=\"font-size:14px;line-height:1.7\">"+d.message+"</div>"
+        +"</div>";
+    }).join("");
+
+    document.getElementById("manager-msg-area").innerHTML=
+      "<div class=\"manager-msg\"><div class=\"mtitle\">📣 主管留言給你（請回覆）</div>"+msgsHTML+"</div>";
+    document.getElementById("member-reply-area").style.display="block";
   }catch(e){console.log("留言讀取錯誤",e);}
 };
 </script>
@@ -271,21 +296,26 @@ const qBank=[
 ];
 
 function getTodayQs(){
-  var today=new Date().toISOString().slice(0,10);
-  var seed=0;
-  for(var i=0;i<today.length;i++)seed+=today.charCodeAt(i)*(i+1);
-  var arr=qBank.slice();
-  arr.sort(function(a,b){
-    var ha=(seed*(a.id.charCodeAt(2)||1))%97;
-    var hb=(seed*(b.id.charCodeAt(2)||1))%97;
-    return ha-hb;
-  });
-  return arr.slice(0,3);
+  var day=new Date().getDay(); // 0=日,1=一,...,5=五,6=六
+  // 依星期幾分組：每組取對應的題目
+  var groups={
+    1:["q_learned","q_asked","q_best_growth","q_redo"],           // 週一：自我成長
+    2:["q_taught","q_belong","q_helper","q_if_manager"],          // 週二：團隊環境
+    3:["q_handle","q_dare","q_pace","q_body"],                    // 週三：挑戰壓力
+    4:["q_moment","q_recommend","q_reason_stay","q_achievement"], // 週四：動力意義
+    5:["q_expectation","q_gap","q_improve_self","q_msg_to_boss"], // 週五：自我評估
+  };
+  var todayGroup=groups[day]||groups[1]; // 週六日預設週一的題
+  return qBank.filter(function(q){return todayGroup.indexOf(q.id)>-1;}).slice(0,3);
 }
 
 var todayQs=getTodayQs();
 document.getElementById("random-questions").innerHTML=todayQs.map(function(q){return q.render();}).join("");
 document.getElementById("date").value=new Date().toISOString().slice(0,10);
+// 週五顯示離職意願題
+if(new Date().getDay()===5){
+  document.getElementById("friday-quit-section").style.display="block";
+}
   // 每週一才出現留任意願題
   var today=new Date();
   var dayOfWeek=today.getDay(); // 0=週日, 1=週一
@@ -330,7 +360,8 @@ async function doSubmit(){
   var date=document.getElementById("date").value;
   if(!date){alert("請選擇日期");return;}
   if(!sc.mood){alert("請填寫今天心情");return;}
-  var dayOfWeek2=new Date().getDay();if(dayOfWeek2===1&&!sc.stay){alert("請填寫本週留任意願");return;}
+  // 週五才驗證離職意願
+  if(new Date().getDay()===5&&!getSel("quit")[0]){alert("請填寫本週離職意願評估");return;}
   var win=document.getElementById("win").value.trim();
   if(!win){alert("請填寫今天做到的一件小事");return;}
   // 有主管留言時，夥伴回覆必填
@@ -348,7 +379,7 @@ async function doSubmit(){
       name:name,role:document.getElementById("role").value.trim(),store:store,date:date,
       mood:sc.mood||0,stress:sc.stress||0,collab:sc.collab||0,stay:sc.stay||null,
       stressSrc:getSel("stressSrc"),quit:getSel("quit")[0]||"",
-      conflict:getSel("conflict")[0]||"",bossContact:getSel("bossContact")[0]||"",
+      quit:getSel("quit")[0]||"",conflict:getSel("conflict")[0]||"",bossContact:getSel("bossContact")[0]||"",
       progress:getSel("progress")[0]||"",signals:getSigs(),win:win,
       msg:document.getElementById("msg").value,
       memberReply:document.getElementById("member-reply-input")?.value.trim()||"",
