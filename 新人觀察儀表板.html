@@ -250,10 +250,14 @@ function doLogout(){
 function avg(arr,k){const v=arr.filter(r=>r[k]>0).map(r=>r[k]);return v.length?v.reduce((a,b)=>a+b,0)/v.length:0;}
 function riskOf(h){
   const s=(h.aM+h.aL+h.aC+h.aS)/4;
-  const hasQ=h.records.some(r=>['今天想很多次','已經很認真在考慮'].includes(r.quit));
+  // 新6選項：後三個才算高風險
+  const highQuit=['認真想過，有一些原因','很認真在考慮，快決定了','已經決定要離職了'];
+  const midQuit=['有想過，還在觀察'];
+  const hasHighQ=h.records.some(r=>highQuit.includes(r.quit));
+  const hasMidQ=h.records.some(r=>midQuit.includes(r.quit));
   const hasSig=h.records.some(r=>r.signals&&r.signals.length>0);
-  if(h.aS<2||s<2.5||hasQ)return'high';
-  if(s<3.3||hasSig)return'mid';
+  if(h.aS<2||s<2.5||hasHighQ)return'high';
+  if(s<3.3||hasSig||hasMidQ)return'mid';
   return'low';
 }
 function genTips(h,cp){
@@ -265,9 +269,11 @@ function genTips(h,cp){
   if(ss.includes('怕犯錯被罵'))t.push({u:'關注',txt:'反映「怕犯錯被罵」，本週多給正向回饋，犯錯時先問情況再說明，避免當眾責備。'});
   if(ss.includes('動作太慢'))t.push({u:'行動',txt:'對速度感到壓力，主動告訴他「速度慢慢來，先求正確」，給他信心。'});
   const q=l.quit||'';
-  if(q==='已經很認真在考慮')t.push({u:'緊急',txt:'已出現強烈離職念頭！今天就私下約談，了解主要原因。'});
-  else if(q==='今天想很多次')t.push({u:'緊急',txt:'今天多次出現離職念頭，主動關心，不要等他先開口。'});
-  else if(q==='偶爾閃過')t.push({u:'關注',txt:'偶有離職念頭，本週找機會聊聊他對工作的感受。'});
+  if(q==='已經決定要離職了')t.push({u:'緊急',txt:'夥伴表示已決定離職！今天立刻私下約談，了解原因，看是否有挽留空間。'});
+  else if(q==='很認真在考慮，快決定了')t.push({u:'緊急',txt:'離職意願非常強烈，今天就找他私下談，主動了解主要原因。'});
+  else if(q==='認真想過，有一些原因')t.push({u:'緊急',txt:'夥伴有認真考慮過離職，本週安排一對一，聽他說說原因。'});
+  else if(q==='有想過，還在觀察')t.push({u:'關注',txt:'夥伴有離職念頭但還在觀察，本週找機會聊聊他對工作的感受和期待。'});
+  else if(q==='偶爾閃過，但不嚴重')t.push({u:'行動',txt:'偶爾有離職念頭，屬正常範圍，持續給予正向回饋即可。'});
   if(h.aC<=2)t.push({u:'關注',txt:'人際融入度低，安排資深同事主動帶他，降低孤立感。'});
   if(l.conflict==='有，讓我很不舒服')t.push({u:'緊急',txt:'反映有讓他不舒服的人際互動，需私下詢問具體情況。'});
   if(l.support==='感覺被忽視')t.push({u:'關注',txt:'感覺被忽視，今天起每天開工時主動打招呼問候。'});
@@ -338,7 +344,12 @@ async function show(name){
   const today=new Date().toLocaleDateString('zh-TW');
   const todayReplies=allReplies.filter(r=>r.date===today);
   const histHTML=sorted.map((r,idx)=>{
-    const qc=r.quit==='已經很認真在考慮'?`<span style="color:#dc2626;font-weight:500">考慮離職</span>`:r.quit==='今天想很多次'?`<span style="color:#dc2626">有念頭</span>`:r.quit==='偶爾閃過'?`<span style="color:#92400e">偶爾閃過</span>`:`<span style="color:var(--t3)">穩定</span>`;
+    const qc=r.quit==='已經決定要離職了'?`<span style="color:#dc2626;font-weight:700">決定離職</span>`:
+      r.quit==='很認真在考慮，快決定了'?`<span style="color:#dc2626;font-weight:600">快決定了</span>`:
+      r.quit==='認真想過，有一些原因'?`<span style="color:#dc2626">認真考慮</span>`:
+      r.quit==='有想過，還在觀察'?`<span style="color:#92400e">觀察中</span>`:
+      r.quit==='偶爾閃過，但不嚴重'?`<span style="color:#b8958a">偶爾閃過</span>`:
+      r.quit==='完全沒有，工作還OK'?`<span style="color:var(--t3)">穩定</span>`:`<span style="color:var(--t3)">穩定</span>`;
     const rowDate=r.date||'';
     // 詳細內容
     const moodEmoji=['😞','😕','😐','😊','😄'][r.mood-1]||'';
@@ -401,7 +412,9 @@ async function show(name){
         <div style="font-size:12px"><span style="color:var(--t3)">留任</span> ${stayEmoji} ${r.stay||'-'}/5</div>
       </div>
       ${r.stressSrc?.length?`<div style="font-size:12px;margin-bottom:6px"><span style="color:var(--t3)">壓力來源：</span>${r.stressSrc.join('、')}</div>`:''}
-      ${r.quit?`<div style="font-size:12px;margin-bottom:6px"><span style="color:var(--t3)">離職念頭：</span><span style="color:${r.quit.includes('考慮')||r.quit.includes('多次')?'#dc2626':'var(--t1)'}">${r.quit}</span></div>`:''}
+      ${r.quit?`<div style="font-size:12px;margin-bottom:6px"><span style="color:var(--t3)">離職念頭：</span><span style="color:${
+        r.quit.includes('決定離職')||r.quit.includes('快決定')||r.quit.includes('認真想過')?'#dc2626':
+        r.quit.includes('觀察')?'#92400e':'var(--t1)'}">${r.quit}</span></div>`:''}
       ${r.bossContact?`<div style="font-size:12px;margin-bottom:6px"><span style="color:var(--t3)">主管有說話：</span>${r.bossContact}</div>`:''}
       ${r.progress?`<div style="font-size:12px;margin-bottom:6px"><span style="color:var(--t3)">進步狀況：</span>${r.progress}</div>`:''}
       ${r.signals?.length?`<div style="font-size:12px;margin-bottom:6px"><span style="color:#dc2626">緊急訊號：</span>${r.signals.join('、')}</div>`:''}
